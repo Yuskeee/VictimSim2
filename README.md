@@ -1,15 +1,13 @@
-VictimSim2
-==========
+# VictimSim2
 
-A simulator designed for testing search algorithms and other IA techniques in rescue scenarios is utilized within the Artificial Intelligence course at UTFPR, Curitiba. Known as VictimSim2, this simulator is useful for studying catastrophic scenarios within a 2D grid environment, where artificial agents embark on search and rescue missions to locate and aid victims.
+Um simulador projetado para testar algoritmos de busca e outras técnicas de IA em cenários de resgate é utilizado no curso de Inteligência Artificial da UTFPR, em Curitiba. Conhecido como VictimSim2, esse simulador é útil para estudar cenários catastróficos dentro de um ambiente de grade 2D, onde agentes artificiais embarcam em missões de busca e resgate para localizar e ajudar vítimas.
 
-Key features of the simulator
------------------------------
+## Principais características do simulador
 
-- The environment comprises a 2D grid, indexed by coordinates (column, row) or (x, y). The origin is situated at the upper left corner, with the y-axis extending downwards and the x-axis extending towards the right. While the absolute coordinates are accessible solely to the environment simulator, users are encouraged to establish their own coordinate system for the agents.
-- Each cell within the 2D grid is assigned a degree of difficulty for accessibility, ranging from values greater than zero to 100. The maximum value of 100 indicates the presence of an impassable wall, while higher values signify increasingly challenging access. Conversely, values less than or equal to one denote easier entry.
-- The environment accommodates one or more agents, with each agent assigned a customizable color via configuration files.
-- Collision detection is integrated to identify instances where an agent collides with walls or reaches the grid's boundaries, termed as "BUMPED" perception.
-- Agents possess the ability to detect obstacles and grid boundaries within their immediate neighborhood, one step ahead from their current position.
-- Multiple agents can occupy the same cell simultaneously without causing collisions.
-- The simulator regulates the scheduling of each agent based on their state: ACTIVE, IDLE, ENDED, or DEAD. Only active agents are permitted to execute actions, and the simulator manages the allotted execution time for each agent; upon expiry, the agent is considered DEAD.
+- O ambiente é composto por uma grade 2D, indexada por coordenadas (coluna, linha) ou (x, y). A origem está situada no canto superior esquerdo, com o eixo y se estendendo para baixo e o eixo x se estendendo para a direita. Enquanto as coordenadas absolutas são acessíveis somente ao simulador de ambiente, os usuários são incentivados a estabelecer seu próprio sistema de coordenadas para os agentes.
+- Cada célula dentro da grade 2D é atribuída um grau de dificuldade para acessibilidade, variando de valores superiores a zero até 100. O valor máximo de 100 indica a presença de uma parede intransponível, enquanto valores mais altos significam acesso cada vez mais desafiador. Por outro lado, valores menores ou iguais a um denotam entrada mais fácil.
+- O ambiente acomoda um ou mais agentes, com cada agente atribuído uma cor personalizável através de arquivos de configuração.
+- A detecção de colisão está integrada para identificar instâncias em que um agente colide com paredes ou atinge os limites da grade, denominado percepção "BUMPED".
+- Os agentes possuem a capacidade de detectar obstáculos e limites da grade em seu imediato entorno, um passo à frente de sua posição atual.
+- Vários agentes podem ocupar a mesma célula simultaneamente sem causar colisões.
+- O simulador regula o agendamento de cada agente com base em seu estado: ATIVO, INATIVO, TERMINADO ou MORTO. Apenas agentes ativos estão autorizados a executar ações, e o simulador gerencia o tempo de execução alocado para cada agente; ao expirar, o agente é considerado MORTO.
