@@ -1,3 +1,7 @@
+## CONSTANTS
+### @Author: Tacla (UTFPR)
+### It has the constants used by the simulator and by the user of the simulator
+
 class VS:
     
     # States of the body of the agent

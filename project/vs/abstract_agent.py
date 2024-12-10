@@ -1,4 +1,10 @@
+##  ABSTRACT AGENT
+### @Author: Tacla (UTFPR)
+### It has the default methods for all the agents supposed to run in
+### the environment
+
 import os
+import random
 from abc import ABC, abstractmethod
 from .constants import VS
 

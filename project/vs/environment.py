@@ -1,12 +1,17 @@
+# Author Tacla, UTFPR
+# First version  fev/2023
+
+import sys
 import os
-import pygame # type: ignore
+import pygame   # type: ignore
+import random
 import csv
 import time
 import math
 import colorsys
-from abstract_agent import AbstractAgent
-from physical_agent import PhysicalAgent
-from constants import VS
+from .abstract_agent import AbstAgent
+from .physical_agent import PhysAgent
+from .constants import VS
 
 # Class Environment
 class Env:
@@ -163,7 +168,7 @@ class Env:
         '''
 
         # creates a physical agent (abstract agent, env, base coordinates and state)
-        body = PhysicalAgent(ag, self, self.dic["BASE"][0], self.dic["BASE"][1], state)
+        body = PhysAgent(ag, self, self.dic["BASE"][0], self.dic["BASE"][1], state)
         self.agents.append(body)
         return body
     
