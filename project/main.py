@@ -17,7 +17,7 @@ def main(data_folder_name, config_ag_folder_name):
     
     # Instantiate master_rescuer
     # This agent unifies the maps and instantiate other 3 agents
-    rescuer_file = os.path.join(config_ag_folder, "rescuer_config.txt")
+    rescuer_file = os.path.join(config_ag_folder, "rescuer_1_config.txt")
     master_rescuer = Rescuer(env, rescuer_file, 4)   # 4 is the number of explorer agents
 
     # Explorer needs to know rescuer to send the map 
