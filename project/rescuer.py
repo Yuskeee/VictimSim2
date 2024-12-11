@@ -16,9 +16,9 @@ import math
 import csv
 import sys
 from map import Map
-from vs.abstract_agent import AbstAgent
-from vs.physical_agent import PhysAgent
-from vs.constants import VS
+from .vs.abstract_agent import AbstAgent
+from .vs.physical_agent import PhysAgent
+from .vs.constants import VS
 from bfs import BFS
 from abc import ABC, abstractmethod
 
@@ -275,7 +275,7 @@ class Rescuer(AbstAgent):
         walked = self.walk(dx, dy)
 
         # Rescue the victim at the current position
-        if walked == VS.EXECUTED:
+        if walked == VS.EXECUTED:   # walk action was a success
             self.x += dx
             self.y += dy
             #print(f"{self.NAME} Walk ok - Rescuer at position ({self.x}, {self.y})")
@@ -283,6 +283,7 @@ class Rescuer(AbstAgent):
             # check if there is a victim at the current position
             if self.map.in_map((self.x, self.y)):
                 vic_id = self.map.get_vic_id((self.x, self.y))
+                # if there's a victim, drop first aid
                 if vic_id != VS.NO_VICTIM:
                     self.first_aid()
                     #if self.first_aid(): # True when rescued
