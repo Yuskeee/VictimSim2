@@ -1,6 +1,7 @@
 ## CONSTANTS
 ### @Author: Tacla (UTFPR)
 ### It has the constants used by the simulator and by the user of the simulator
+### Edited by jpmaciels dec/2024: Added Magenta color
 
 class VS:
     
@@ -37,6 +38,7 @@ class VS:
     RED = (255, 0, 0)
     CYAN = (0, 255, 255)
     YELLOW = (255, 255, 0)
+    MAGENTA = (255, 0, 255)
 
     # Specific colors for victim by injury severity -
     # SEV1 is the most severe; SEV4 is the least severe

@@ -1,5 +1,6 @@
 # Author Tacla, UTFPR
 # First version  fev/2023
+# Edited by jpmaciels dec/2024: Easier visualization of found victims
 
 import sys
 import os
@@ -251,7 +252,8 @@ class Env:
             if self.saved[v] != []:
                 pygame.draw.ellipse(self.screen, VS.WHITE, victim_rect, 3)
             elif self.found[v] != []:
-                pygame.draw.ellipse(self.screen, VS.BLACK, victim_rect, 3)
+                pygame.draw.ellipse(self.screen, VS.MAGENTA, victim_rect, 3)
+                pygame.draw.ellipse(self.screen, VS.BLACK, victim_rect, 2)
             v = v + 1
 
         # Draw the physical agents
