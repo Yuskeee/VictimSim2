@@ -6,8 +6,8 @@ import os
 import random
 import math
 from abc import ABC, abstractmethod
-from .vs.abstract_agent import AbstAgent
-from .vs.constants import VS
+from vs.abstract_agent import AbstAgent
+from vs.constants import VS
 from map import Map
 
 class Stack:

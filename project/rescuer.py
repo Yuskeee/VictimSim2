@@ -16,9 +16,9 @@ import math
 import csv
 import sys
 from map import Map
-from .vs.abstract_agent import AbstAgent
-from .vs.physical_agent import PhysAgent
-from .vs.constants import VS
+from vs.abstract_agent import AbstAgent
+from vs.physical_agent import PhysAgent
+from vs.constants import VS
 from bfs import BFS
 from abc import ABC, abstractmethod
 

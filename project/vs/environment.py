@@ -62,7 +62,7 @@ class Env:
                 y = int(row[1])
                 # multiplying factor for the obstacle
                 # ]0, 1[ = descent; 1 = VS.OBST_NONE; ]1, 100[ = ascent; 100 = VS.OBST_WALL
-                obst = int(row[2])
+                obst = float(row[2])
 
                 # wall
                 if obst > 100:

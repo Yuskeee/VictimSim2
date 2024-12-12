@@ -1,7 +1,7 @@
 import sys
 import os
 
-from .vs.environment import Env
+from vs.environment import Env
 from explorer import Explorer
 from rescuer import Rescuer
 
@@ -39,7 +39,7 @@ if __name__ == '__main__':
         data_folder_name = sys.argv[1]
     else:
         data_folder_name = os.path.join("datasets", "data_400v_90x90")
-        config_ag_folder_name = os.path.join("project", "cfg")
+        config_ag_folder_name = os.path.join(".", "cfg")
         
     main(data_folder_name, config_ag_folder_name)
 

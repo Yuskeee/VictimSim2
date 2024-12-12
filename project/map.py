@@ -32,7 +32,7 @@
 ## Example of a map entry WITHOUT VICTIM:
 ## (11, 8): (0, VS.NO_VICTIM,[VS.WALL, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.WALL, VS.CLEAR, VS.WALL])   
 ##
-from .vs.constants import VS
+from vs.constants import VS
 
 class Map:
     def __init__(self):
