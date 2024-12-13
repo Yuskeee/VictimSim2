@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from vs.abstract_agent import AbstAgent
 from vs.constants import VS
 from map import Map
+from bfs import BFS
 
 class Stack:
     def __init__(self):
@@ -60,6 +61,9 @@ class Explorer(AbstAgent):
         # put the current position - the base - in the map
         self.map.add((self.x, self.y), 1, VS.NO_VICTIM, self.check_walls_and_lim())
         self.visited.add((self.x, self.y))
+        self.is_coming_back = False
+        self.back_plan = []        # the plan to come back to the base
+        self.back_plan_cost = 0    # the cost of the plan to come back to the base
 
     def get_next_position(self):
         """ Gets the next position that can be explored (no wall and inside the grid)
@@ -141,10 +145,10 @@ class Explorer(AbstAgent):
         return
 
     def come_back(self):
-        """ Returns 1 step back to the previous position """
+        """ Do the steps that are in the walk_stack to come back to the base """
         dx, dy = self.walk_stack.pop()
-        dx = dx * -1
-        dy = dy * -1
+        # dx = dx * -1
+        # dy = dy * -1
 
         result = self.walk(dx, dy)
         if result == VS.BUMPED:
@@ -172,10 +176,30 @@ class Explorer(AbstAgent):
             self.explore()
             return True
 
+        if not self.is_coming_back:
+            self.map.draw
+            # time to come back
+            self.is_coming_back = True
+
+            # calculates with BFS the path to the base
+            start = (self.x, self.y)
+            goal = (0, 0)
+            bfs = BFS(self.map)
+            self.back_plan, self.back_plan_cost = bfs.search(start, goal)
+            print(f"{self.NAME}: starting position: {start}")
+            print(f"{self.NAME}: back plan: {self.back_plan}, cost: {self.back_plan_cost}")
+            # updates walk_stack with the back_plan
+            self.walk_stack = Stack()
+            for action in self.back_plan[::-1]:
+                self.walk_stack.push(action)
+            print (f"{self.NAME}: walk_stack: {self.walk_stack.items}")
+
         # no more come back walk actions to execute or already at base
         if self.walk_stack.is_empty() or (self.x == 0 and self.y == 0):
             # time to pass the map and found victims to the master rescuer
             self.resc.sync_explorers(self.map, self.victims)
+            # prints position and time of the explorer when finishes
+            print(f"{self.NAME}: at ({self.x}, {self.y}), rtime: {self.get_rtime()}")
             # finishes the execution of this agent
             return False
 
