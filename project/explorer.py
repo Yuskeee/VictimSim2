@@ -97,6 +97,12 @@ class Explorer(AbstAgent):
     def explore(self):
         # get an increment for x and y
         dx, dy = self.get_next_position()
+        # checks whether the agent should backtrack due to all neighbors being visited
+        # if all neighbors are visited, return to the previous position
+        if all([(self.x + incr[0], self.y + incr[1]) in self.visited for incr in Explorer.AC_INCR.values()]):
+            dx, dy = self.walk_stack.pop()
+            dx = -1 * dx
+            dy = -1 * dy
 
         # Moves the body to another position
         rtime_bef = self.get_rtime()    # previous remaining time
@@ -113,12 +119,13 @@ class Explorer(AbstAgent):
             #print(f"{self.NAME}: Wall or grid limit reached at ({self.x + dx}, {self.y + dy})")
 
         if result == VS.EXECUTED:
+            # store the new step (displacement) in the stack
+            if (self.x + dx,self.y + dy) not in self.visited:
+                self.walk_stack.push((dx, dy))
+
             self.visited.add((self.x + dx,self.y + dy))
             # check for victim, returns -1 if there is no victim or the sequential
             # the sequential number of a found victim
-
-            # store the new step (displacement) in the stack
-            self.walk_stack.push((dx, dy))
 
             # update the agent's position relative to the origin
             self.x += dx
