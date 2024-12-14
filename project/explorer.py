@@ -10,6 +10,7 @@ from vs.abstract_agent import AbstAgent
 from vs.constants import VS
 from map import Map
 from bfs import BFS
+from numpy.random import choice
 
 class Stack:
     def __init__(self):
@@ -65,6 +66,12 @@ class Explorer(AbstAgent):
         self.back_plan = []        # the plan to come back to the base
         self.back_plan_cost = 0    # the cost of the plan to come back to the base
 
+        # create a bias to the cost of the walk actions, sum must add up to 1
+        self.bias = []
+        for i in range(8):
+            self.bias.append(random.random())
+        self.bias = [x / sum(self.bias) for x in self.bias]
+
     def get_next_position(self):
         """ Gets the next position that can be explored (no wall and inside the grid)
             There must be at least one CLEAR position in the neighborhood, otherwise it loops forever.
@@ -74,7 +81,7 @@ class Explorer(AbstAgent):
         tried_directions = set()  # to keep track of attempted directions
 
         while len(tried_directions) < 8:
-            direction = random.randint(0, 7)
+            direction = choice(range(8), p=self.bias)
             if direction in tried_directions:
                 continue
             tried_directions.add(direction)
@@ -84,7 +91,7 @@ class Explorer(AbstAgent):
                 return (dx, dy)
 
         # If all directions have been tried, return a random valid direction
-        direction = random.choice(list(tried_directions))
+        direction = choice(list(tried_directions), p=self.bias)
         return Explorer.AC_INCR[direction]
 
     def explore(self):
@@ -186,13 +193,13 @@ class Explorer(AbstAgent):
             goal = (0, 0)
             bfs = BFS(self.map)
             self.back_plan, self.back_plan_cost = bfs.search(start, goal)
-            print(f"{self.NAME}: starting position: {start}")
-            print(f"{self.NAME}: back plan: {self.back_plan}, cost: {self.back_plan_cost}")
+            # print(f"{self.NAME}: starting position: {start}")
+            # print(f"{self.NAME}: back plan: {self.back_plan}, cost: {self.back_plan_cost}")
             # updates walk_stack with the back_plan
             self.walk_stack = Stack()
             for action in self.back_plan[::-1]:
                 self.walk_stack.push(action)
-            print (f"{self.NAME}: walk_stack: {self.walk_stack.items}")
+            # print (f"{self.NAME}: walk_stack: {self.walk_stack.items}")
 
         # no more come back walk actions to execute or already at base
         if self.walk_stack.is_empty() or (self.x == 0 and self.y == 0):
