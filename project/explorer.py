@@ -186,8 +186,14 @@ class Explorer(AbstAgent):
         time_tolerance = 2* self.COST_DIAG * Explorer.MAX_DIFFICULTY + self.COST_READ
 
         # keeps exploring while there is enough time
-        if  self.walk_time < (self.get_rtime() - time_tolerance):
+        if  self.back_plan_cost + time_tolerance < self.get_rtime():
             self.explore()
+
+            start = (self.x, self.y)
+            goal = (0, 0)
+            bfs = BFS(self.map)
+            self.back_plan, self.back_plan_cost = bfs.search(start, goal)
+            
             return True
 
         if not self.is_coming_back:
