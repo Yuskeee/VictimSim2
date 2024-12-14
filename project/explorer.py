@@ -10,6 +10,7 @@ from vs.abstract_agent import AbstAgent
 from vs.constants import VS
 from map import Map
 from bfs import BFS
+from dijkstra import Dijkstra
 
 class Stack:
     def __init__(self):
@@ -64,6 +65,7 @@ class Explorer(AbstAgent):
         self.is_coming_back = False
         self.back_plan = []        # the plan to come back to the base
         self.back_plan_cost = 0    # the cost of the plan to come back to the base
+        self.dijkstra = Dijkstra((0, 0))  # Dijkstra algorithm to find the path to the base
 
     def get_next_position(self):
         """ Gets the next position that can be explored (no wall and inside the grid)
@@ -113,6 +115,10 @@ class Explorer(AbstAgent):
             # store the new step (displacement) in the stack
             self.walk_stack.push((dx, dy))
 
+            prev_x = self.x
+            prev_y = self.y
+            prev_diff = self.map.get_difficulty((prev_x, prev_y))
+
             # update the agent's position relative to the origin
             self.x += dx
             self.y += dy
@@ -134,13 +140,21 @@ class Explorer(AbstAgent):
             # Calculates the difficulty (cost) of the visited cell
             difficulty = (rtime_bef - rtime_aft)
             if dx == 0 or dy == 0:
+                prev_diff = prev_diff * self.COST_LINE
+                self.dijkstra.add_edge((prev_x, prev_y), (self.x, self.y), difficulty, prev_diff)
+
                 difficulty = difficulty / self.COST_LINE
             else:
+                prev_diff = prev_diff * self.COST_DIAG
+                self.dijkstra.add_edge((prev_x, prev_y), (self.x, self.y), difficulty, prev_diff)
+
                 difficulty = difficulty / self.COST_DIAG
 
             # Update the map with the new cell
             self.map.add((self.x, self.y), difficulty, seq, self.check_walls_and_lim())
             #print(f"{self.NAME}:at ({self.x}, {self.y}), diffic: {difficulty:.2f} vict: {seq} rtime: {self.get_rtime()}")
+
+            # self.dijkstra.add_edge((prev_x, prev_y), (self.x, self.y), difficulty)
 
         return
 
@@ -167,32 +181,48 @@ class Explorer(AbstAgent):
 
         # TODO: IMPLEMENT LOGIC TO DECIDE THE NEXT ACTION
 
+
+
         # forth and back: go, read the vital signals and come back to the position
 
         time_tolerance = 2* self.COST_DIAG * Explorer.MAX_DIFFICULTY + self.COST_READ
 
-        # keeps exploring while there is enough time
-        if  self.walk_time < (self.get_rtime() - time_tolerance):
+        if  self.back_plan_cost + time_tolerance < self.get_rtime():
             self.explore()
+
+            # start = (self.x, self.y)
+            # goal = (0, 0)
+            # bfs = BFS(self.map)
+            # self.back_plan, self.back_plan_cost = bfs.search(start, goal)
+
+            self.back_plan_cost = self.dijkstra.get_shortest_cost_back((self.x, self.y))
+            
             return True
+
+        # keeps exploring while there is enough time
+        # if  self.walk_time < (self.get_rtime() - time_tolerance):
+        #     self.explore()
+        #     return True
 
         if not self.is_coming_back:
             self.map.draw
             # time to come back
             self.is_coming_back = True
 
-            # calculates with BFS the path to the base
-            start = (self.x, self.y)
-            goal = (0, 0)
-            bfs = BFS(self.map)
-            self.back_plan, self.back_plan_cost = bfs.search(start, goal)
-            print(f"{self.NAME}: starting position: {start}")
-            print(f"{self.NAME}: back plan: {self.back_plan}, cost: {self.back_plan_cost}")
+            self.back_plan, self.back_plan_cost = self.dijkstra.calc_backtrack((self.x, self.y))
+
+            # # calculates with BFS the path to the base
+            # start = (self.x, self.y)
+            # goal = (0, 0)
+            # bfs = BFS(self.map)
+            # self.back_plan, self.back_plan_cost = bfs.search(start, goal)
+            # # print(f"{self.NAME}: starting position: {start}")
+            # # print(f"{self.NAME}: back plan: {self.back_plan}, cost: {self.back_plan_cost}")
             # updates walk_stack with the back_plan
             self.walk_stack = Stack()
             for action in self.back_plan[::-1]:
                 self.walk_stack.push(action)
-            print (f"{self.NAME}: walk_stack: {self.walk_stack.items}")
+            # print (f"{self.NAME}: walk_stack: {self.walk_stack.items}")
 
         # no more come back walk actions to execute or already at base
         if self.walk_stack.is_empty() or (self.x == 0 and self.y == 0):
