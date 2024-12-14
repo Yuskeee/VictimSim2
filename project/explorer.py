@@ -11,6 +11,7 @@ from vs.constants import VS
 from map import Map
 from bfs import BFS
 from dijkstra import Dijkstra
+from numpy.random import choice
 
 class Stack:
     def __init__(self):
@@ -65,9 +66,15 @@ class Explorer(AbstAgent):
         self.is_coming_back = False
         self.back_plan = []        # the plan to come back to the base
         self.back_plan_cost = 0    # the cost of the plan to come back to the base
-        self.dijkstra = Dijkstra((0, 0))  # Dijkstra algorithm to find the path to the base
+        self.dijkstra = Dijkstra((0, 0))  # Dijkstra algorithm to find the path back to the base
 
-    def get_next_position(self):
+        # create a bias to the cost of the walk actions, sum must add up to 1
+        self.bias = []
+        for i in range(8):
+            self.bias.append(random.random())
+        self.bias = [x / sum(self.bias) for x in self.bias]
+
+    def get_next_position(self):        
         """ Gets the next position that can be explored (no wall and inside the grid)
             There must be at least one CLEAR position in the neighborhood, otherwise it loops forever.
         """
@@ -76,7 +83,7 @@ class Explorer(AbstAgent):
         tried_directions = set()  # to keep track of attempted directions
 
         while len(tried_directions) < 8:
-            direction = random.randint(0, 7)
+            direction = choice(range(8), p=self.bias)
             if direction in tried_directions:
                 continue
             tried_directions.add(direction)
@@ -86,8 +93,26 @@ class Explorer(AbstAgent):
                 return (dx, dy)
 
         # If all directions have been tried, return a random valid direction
-        direction = random.choice(list(tried_directions))
+        direction = choice(list(tried_directions), p=self.bias)
         return Explorer.AC_INCR[direction]
+    
+        # # Check the neighborhood walls and grid limits
+        # obstacles = self.check_walls_and_lim()
+        # tried_directions = set()  # to keep track of attempted directions
+
+        # while len(tried_directions) < 8:
+        #     direction = random.randint(0, 7)
+        #     if direction in tried_directions:
+        #         continue
+        #     tried_directions.add(direction)
+
+        #     dx, dy = Explorer.AC_INCR[direction]
+        #     if obstacles[direction] == VS.CLEAR and (self.x + dx, self.y + dy) not in self.visited:
+        #         return (dx, dy)
+
+        # # If all directions have been tried, return a random valid direction
+        # direction = random.choice(list(tried_directions))
+        # return Explorer.AC_INCR[direction]
 
     def explore(self):
         # get an increment for x and y
