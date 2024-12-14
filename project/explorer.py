@@ -98,8 +98,8 @@ class Explorer(AbstAgent):
         # get an increment for x and y
         dx, dy = self.get_next_position()
         # checks whether the agent should backtrack due to all neighbors being visited
-        # if all neighbors are visited, return to the previous position
-        if all([(self.x + incr[0], self.y + incr[1]) in self.visited for incr in Explorer.AC_INCR.values()]):
+        # if all neighbors are visited or bumps into a wall or limit, return to the previous position
+        if all([(self.x + incr[0], self.y + incr[1]) in self.visited or self.check_walls_and_lim()[i] == VS.WALL or self.check_walls_and_lim()[i] == VS.END for i, incr in Explorer.AC_INCR.items()]):
             dx, dy = self.walk_stack.pop()
             dx = -1 * dx
             dy = -1 * dy
