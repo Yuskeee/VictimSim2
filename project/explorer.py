@@ -11,6 +11,7 @@ from vs.constants import VS
 from map import Map
 from bfs import BFS
 from numpy.random import choice
+from dijkstra import Dijkstra
 
 class Stack:
     def __init__(self):
@@ -28,7 +29,7 @@ class Stack:
 
 class Explorer(AbstAgent):
     """ class attribute """
-    MAX_DIFFICULTY = 1             # the maximum degree of difficulty to enter into a cell
+    MAX_DIFFICULTY = 3             # the maximum degree of difficulty to enter into a cell
     # Increments for walk actions
     # EX_INCR = {
     #     0: (0, -1),  #  u: Up
@@ -65,6 +66,7 @@ class Explorer(AbstAgent):
         self.is_coming_back = False
         self.back_plan = []        # the plan to come back to the base
         self.back_plan_cost = 0    # the cost of the plan to come back to the base
+        self.dijkstra = Dijkstra((0,0))
 
         # create a bias to the cost of the walk actions, sum must add up to 1
         self.bias = []
@@ -79,6 +81,7 @@ class Explorer(AbstAgent):
         # Check the neighborhood walls and grid limits
         obstacles = self.check_walls_and_lim()
         tried_directions = set()  # to keep track of attempted directions
+        cost_current = self.map.get_difficulty((self.x, self.y))
 
         while len(tried_directions) < 8:
             direction = choice(range(8), p=self.bias)
@@ -89,6 +92,19 @@ class Explorer(AbstAgent):
             dx, dy = Explorer.AC_INCR[direction]
             if obstacles[direction] == VS.CLEAR and (self.x + dx, self.y + dy) not in self.visited:
                 return (dx, dy)
+            
+            if obstacles[direction] == VS.CLEAR and (self.x + dx, self.y + dy) in self.visited and not self.dijkstra.check_edge((self.x, self.y), (self.x + dx, self.y + dy)):
+                cost_neighbor = self.map.get_difficulty((self.x + dx, self.y + dy))
+                if dx == 0 or dy == 0:
+                    cost_current = cost_current * self.COST_LINE
+                    cost_neighbor = cost_neighbor * self.COST_LINE
+                else:
+                    cost_current = cost_current * self.COST_DIAG
+                    cost_neighbor = cost_neighbor * self.COST_DIAG
+
+                self.dijkstra.add_edge((self.x, self.y), (self.x + dx, self.y + dy), cost_current, cost_neighbor)
+
+                
 
         # If all directions have been tried, return a random valid direction
         direction = choice(list(tried_directions), p=self.bias)
@@ -127,6 +143,10 @@ class Explorer(AbstAgent):
             # check for victim, returns -1 if there is no victim or the sequential
             # the sequential number of a found victim
 
+            prev_x = self.x
+            prev_y = self.y
+            prev_diff = self.map.get_difficulty((prev_x, prev_y))
+
             # update the agent's position relative to the origin
             self.x += dx
             self.y += dy
@@ -137,7 +157,7 @@ class Explorer(AbstAgent):
 
             # Check for victims
             seq = self.check_for_victim()
-            if seq != VS.NO_VICTIM:
+            if seq != VS.NO_VICTIM and seq not in self.victims:
                 vs = self.read_vital_signals()
                 # add the victim to the dictionary (vs[0] = victim id)
                 self.victims[vs[0]] = ((self.x, self.y), vs)
@@ -148,8 +168,12 @@ class Explorer(AbstAgent):
             # Calculates the difficulty (cost) of the visited cell
             difficulty = (rtime_bef - rtime_aft)
             if dx == 0 or dy == 0:
+                prev_diff = prev_diff * self.COST_LINE
+                self.dijkstra.add_edge((prev_x, prev_y), (self.x, self.y), difficulty, prev_diff)
                 difficulty = difficulty / self.COST_LINE
             else:
+                prev_diff = prev_diff * self.COST_DIAG
+                self.dijkstra.add_edge((prev_x, prev_y), (self.x, self.y), difficulty, prev_diff)
                 difficulty = difficulty / self.COST_DIAG
 
             # Update the map with the new cell
@@ -189,25 +213,29 @@ class Explorer(AbstAgent):
         if  self.back_plan_cost + time_tolerance < self.get_rtime():
             self.explore()
 
-            start = (self.x, self.y)
-            goal = (0, 0)
-            bfs = BFS(self.map)
-            self.back_plan, self.back_plan_cost = bfs.search(start, goal)
+            # start = (self.x, self.y)
+            # goal = (0, 0)
+            # bfs = BFS(self.map)
+            # self.back_plan, self.back_plan_cost = bfs.search(start, goal)
+            self.back_plan_cost = self.dijkstra.get_shortest_cost_back((self.x, self.y))
+            # with open(f"{self.NAME}.csv",'a') as f:
+            #     f.write(f"{self.back_plan_cost},{self.get_rtime()}\n")
             
             return True
 
         if not self.is_coming_back:
-            self.map.draw
+            # self.map.draw
             # time to come back
             self.is_coming_back = True
 
             # calculates with BFS the path to the base
-            start = (self.x, self.y)
-            goal = (0, 0)
-            bfs = BFS(self.map)
-            self.back_plan, self.back_plan_cost = bfs.search(start, goal)
+            # start = (self.x, self.y)
+            # goal = (0, 0)
+            # bfs = BFS(self.map)
+            # self.back_plan, self.back_plan_cost = bfs.search(start, goal)
             # print(f"{self.NAME}: starting position: {start}")
             # print(f"{self.NAME}: back plan: {self.back_plan}, cost: {self.back_plan_cost}")
+            self.back_plan, self.back_plan_cost = self.dijkstra.calc_backtrack((self.x, self.y))
             # updates walk_stack with the back_plan
             self.walk_stack = Stack()
             for action in self.back_plan[::-1]:
