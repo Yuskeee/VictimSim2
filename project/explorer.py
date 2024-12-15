@@ -68,11 +68,12 @@ class Explorer(AbstAgent):
         self.back_plan_cost = 0    # the cost of the plan to come back to the base
         self.dijkstra = Dijkstra((0,0))
 
-        # create a bias to the cost of the walk actions, sum must add up to 1
-        self.bias = []
-        for i in range(8):
-            self.bias.append(random.random())
-        self.bias = [x / sum(self.bias) for x in self.bias]
+        # An array that is a permutation of [0,1,2,3,4,5,6,7] -> movements
+        self.movements = [0, 1, 2, 3, 4, 5, 6, 7]
+        random.shuffle(self.movements)  # shuffle the array to avoid always trying the same direction
+
+        self.n_movements_before_shuffle = 1  # number of movements before shuffling the array
+        self.movements_counter = 0           # counter to shuffle the array
 
     def get_next_position(self):
         """ Gets the next position that can be explored (no wall and inside the grid)
@@ -83,11 +84,18 @@ class Explorer(AbstAgent):
         tried_directions = set()  # to keep track of attempted directions
         cost_current = self.map.get_difficulty((self.x, self.y))
 
-        while len(tried_directions) < 8:
-            direction = choice(range(8), p=self.bias)
-            if direction in tried_directions:
-                continue
-            tried_directions.add(direction)
+        # Shuffle the movements to avoid always trying the same direction
+        if self.movements_counter > self.n_movements_before_shuffle:
+            # Shuffle only the last 7 elements of the array, the first one is always the same
+            aux_movements = self.movements[1:]
+            random.shuffle(aux_movements)
+            self.movements = [self.movements[0]] + aux_movements
+            self.movements_counter = 0
+        else:
+            self.movements_counter += 1
+
+        for movement in self.movements:
+            direction = movement
 
             dx, dy = Explorer.AC_INCR[direction]
             if obstacles[direction] == VS.CLEAR and (self.x + dx, self.y + dy) not in self.visited:
@@ -107,7 +115,7 @@ class Explorer(AbstAgent):
                 
 
         # If all directions have been tried, return a random valid direction
-        direction = choice(list(tried_directions), p=self.bias)
+        direction = random.randint(0, 7)
         return Explorer.AC_INCR[direction]
 
     def explore(self):
