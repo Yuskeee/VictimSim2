@@ -1,3 +1,4 @@
+from math import sqrt
 from dijkstar import Graph, find_path
 from dijkstar.algorithm import (
     single_source_shortest_paths as calc_shortest_paths,
@@ -32,9 +33,20 @@ class Dijkstra:
         dx = x2 - x1
         dy = y2 - y1
         return (dx, dy)
+    
+    def _estimate_heuristics(self, node1, node2, edge, prev_edge):
+        x1, y1 = node1
+        x2, y2 = node2
+        heuristics = sqrt((x2 - x1)**2 + (y2 - y1)**2)
+        if not prev_edge and edge < heuristics:
+            return edge
+        if prev_edge and edge + prev_edge < heuristics:
+            return edge + prev_edge
+        return heuristics
 
     def calc_shortest_path_back(self, node):
-        path = find_path(self._graph, node, self.start)
+
+        path = find_path(self._graph, node, self.start, heuristic_func=self._estimate_heuristics)
         return path[0], path[3]
 
     def get_shortest_cost_back(self, node):
@@ -83,10 +95,12 @@ if __name__ == "__main__":
 
     dijkstra.add_edge((2,2), (3,2), 1, 1)
 
-    print(dijkstra._graph)
-    dijkstra.add_edge((0,0), (1,0), 1, 1)
-    print(dijkstra._graph)
+    # print(dijkstra._graph)
+    # dijkstra.add_edge((0,0), (1,0), 1, 1)
+    # print(dijkstra._graph)
 
     # print(dijkstra.check_edge((0,0), (3,2)))
+
+    print(dijkstra.calc_shortest_path_back((3,2)))
 
     # print(dijkstra.calc_backtrack((3,2)))
