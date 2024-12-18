@@ -176,13 +176,16 @@ class Rescuer(AbstAgent):
             plan, time = bfs.search(start, goal, self.plan_rtime)
             self.plan = self.plan + plan
             self.plan_rtime = self.plan_rtime - time
+
+            # Calculate Plan to come back to the base
+            plan, time = bfs.search(start, (0,0), self.plan_rtime)
+            plan_rtime_come_back = self.plan_rtime - time
+            if plan_rtime_come_back <= 0:
+                self.plan = self.plan + plan
+                self.plan_rtime = self.plan_rtime - time
+
             start = goal
 
-        # Plan to come back to the base
-        goal = (0,0)
-        plan, time = bfs.search(start, goal, self.plan_rtime)
-        self.plan = self.plan + plan
-        self.plan_rtime = self.plan_rtime - time
 
 
     def sync_explorers(self, explorer_map, victims):
