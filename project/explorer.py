@@ -225,7 +225,9 @@ class Explorer(AbstAgent):
             # goal = (0, 0)
             # bfs = BFS(self.map)
             # self.back_plan, self.back_plan_cost = bfs.search(start, goal)
-            self.back_plan_cost = self.dijkstra.get_shortest_cost_back((self.x, self.y))
+            # self.back_plan_cost = self.dijkstra.get_shortest_cost_back((self.x, self.y))
+            self.back_plan_cost = self.dijkstra.get_shortest_cost((self.x, self.y), (0,0))
+
             # with open(f"{self.NAME}.csv",'a') as f:
             #     f.write(f"{self.back_plan_cost},{self.get_rtime()}\n")
             
