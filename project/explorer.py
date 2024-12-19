@@ -41,7 +41,7 @@ class Explorer(AbstAgent):
     #     6: (-1, 0),  #  l: Left
     #     7: (-1, -1)  # ul: Up left diagonal
     # }
-    def __init__(self, env, config_file, resc):
+    def __init__(self, env, config_file, resc, initial_direction = None):
         """ Construtor do agente [inserir algoritimo de busca]
         @param env: a reference to the environment
         @param config_file: the absolute path to the explorer's config file
@@ -68,11 +68,16 @@ class Explorer(AbstAgent):
         self.back_plan_cost = 0    # the cost of the plan to come back to the base
         self.dijkstra = Dijkstra((0,0))
         self.visited_cells_with_unvisited_neighbors = Stack()
+        self.initial_direction = initial_direction
 
         # An array that is a permutation of [0,1,2,3,4,5,6,7] -> movements
-        self.movements = [0, 1, 2, 3, 4, 5, 6, 7]
-        random.shuffle(self.movements)  # shuffle the array to avoid always trying the same direction
-
+        if initial_direction == None:
+            initial_direction = random.randint(0, 7)
+        other_directions = [i for i in range(8) if i != initial_direction]
+        self.movements = [initial_direction] + other_directions
+        aux_movements = self.movements[1:]
+        random.shuffle(aux_movements)   # shuffle the array to avoid always trying the same direction
+        self.movements = [self.movements[0]] + aux_movements
         self.n_movements_before_shuffle = 1  # number of movements before shuffling the array
         self.movements_counter = 0           # counter to shuffle the array
 
