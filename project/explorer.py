@@ -67,6 +67,7 @@ class Explorer(AbstAgent):
         self.back_plan = []        # the plan to come back to the base
         self.back_plan_cost = 0    # the cost of the plan to come back to the base
         self.dijkstra = Dijkstra((0,0))
+        self.visited_cells_with_unvisited_neighbors = Stack()
 
         # An array that is a permutation of [0,1,2,3,4,5,6,7] -> movements
         self.movements = [0, 1, 2, 3, 4, 5, 6, 7]
@@ -121,12 +122,29 @@ class Explorer(AbstAgent):
     def explore(self):
         # get an increment for x and y
         dx, dy = self.get_next_position()
+
         # checks whether the agent should backtrack due to all neighbors being visited
         # if all neighbors are visited or bumps into a wall or limit, return to the previous position
-        if all([(self.x + incr[0], self.y + incr[1]) in self.visited or self.check_walls_and_lim()[i] == VS.WALL or self.check_walls_and_lim()[i] == VS.END for i, incr in Explorer.AC_INCR.items()]):
-            dx, dy = self.walk_stack.pop()
-            dx = -1 * dx
-            dy = -1 * dy
+        neighbors_not_worth_visiting = [(self.x + incr[0], self.y + incr[1]) in self.visited or self.check_walls_and_lim()[i] == VS.WALL or self.check_walls_and_lim()[i] == VS.END for i, incr in Explorer.AC_INCR.items()]
+        if all(neighbors_not_worth_visiting):
+            bfs_for_backtrack = BFS(self.map)
+            start = (self.x, self.y)
+            if self.visited_cells_with_unvisited_neighbors.is_empty():
+                goal = (0, 0)
+                backtrack_plan, backtrack_plan_cost = bfs_for_backtrack.search(start, goal)
+            else:
+                goal = self.visited_cells_with_unvisited_neighbors.pop()
+                backtrack_plan, backtrack_plan_cost = bfs_for_backtrack.search(start, goal)
+            print(f"{self.NAME}: all neighbors visited, backtracking to {goal} from ({self.x}, {self.y})")
+            # dijkstra_for_backtrack = Dijkstra(start, self.map)
+            # backtrack_plan, backtrack_plan_cost = dijkstra_for_backtrack.calc_shortest_path(start, goal)
+            self.walk_stack = Stack()
+            for action in backtrack_plan[::-1]:
+                self.walk_stack.push(action)
+            return
+        # if two or more neighbors are worth visiting, add the current position to the set of visited cells with unvisited neighbors
+        elif len([neighbor for neighbor in neighbors_not_worth_visiting if not neighbor]) >= 2:
+            self.visited_cells_with_unvisited_neighbors.push((self.x, self.y))
 
         # Moves the body to another position
         rtime_bef = self.get_rtime()    # previous remaining time
@@ -143,9 +161,9 @@ class Explorer(AbstAgent):
             #print(f"{self.NAME}: Wall or grid limit reached at ({self.x + dx}, {self.y + dy})")
 
         if result == VS.EXECUTED:
-            # store the new step (displacement) in the stack
-            if (self.x + dx,self.y + dy) not in self.visited:
-                self.walk_stack.push((dx, dy))
+            # # store the new step (displacement) in the stack
+            # if (self.x + dx,self.y + dy) not in self.visited:
+            #     self.walk_stack.push((dx, dy))
 
             self.visited.add((self.x + dx,self.y + dy))
             # check for victim, returns -1 if there is no victim or the sequential
@@ -205,7 +223,7 @@ class Explorer(AbstAgent):
             # update the agent's position relative to the origin
             self.x += dx
             self.y += dy
-            #print(f"{self.NAME}: coming back at ({self.x}, {self.y}), rtime: {self.get_rtime()}")
+            # print(f"{self.NAME}: coming back at ({self.x}, {self.y}), rtime: {self.get_rtime()}")
 
     def deliberate(self) -> bool:
         """ The agent chooses the next action. The simulator calls this
@@ -219,7 +237,10 @@ class Explorer(AbstAgent):
 
         # keeps exploring while there is enough time
         if  self.back_plan_cost + time_tolerance < self.get_rtime():
-            self.explore()
+            if not self.walk_stack.is_empty():
+                self.come_back()
+            else:
+                self.explore()
 
             # start = (self.x, self.y)
             # goal = (0, 0)
