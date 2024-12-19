@@ -21,6 +21,7 @@ from vs.physical_agent import PhysAgent
 from vs.constants import VS
 from bfs import BFS
 from abc import ABC, abstractmethod
+from dijkstra import Dijkstra
 
 
 ## Classe que define o Agente Rescuer com um plano fixo
@@ -152,75 +153,54 @@ class Rescuer(AbstAgent):
 
         self.sequences = new_sequences
 
-
-    def fitness(self, individual):
-        """Calculate the fitness as the inverse of total time to rescue."""
-        total_time = 0
-        current_pos = (0, 0)
-
-        for victim_id in individual:
-            coord, _ = self.victims[victim_id]
-            dx = abs(coord[0] - current_pos[0])
-            dy = abs(coord[1] - current_pos[1])
-            step_cost = dx * self.COST_LINE + dy * self.COST_DIAG
-            total_time += step_cost
-            current_pos = coord
-
-        # Add time to return to base
-        total_time += abs(current_pos[0]) * self.COST_LINE + abs(current_pos[1]) * self.COST_DIAG
-        return 1 / (total_time + 1)  # Inverse of total time
-
-    def crossover(self, parent1, parent2):
-        """Perform crossover between two parents."""
-        crossover_point = random.randint(1, len(parent1) - 2)
-        child = parent1[:crossover_point] + [v for v in parent2 if v not in parent1[:crossover_point]]
-        return child
-
-    def mutate(self, individual):
-        """Mutate an individual randomly."""
-        if random.random() < 0.1:  # 10% mutation probability
-            idx1, idx2 = random.sample(range(len(individual)), 2)
-            individual[idx1], individual[idx2] = individual[idx2], individual[idx1]
-
     def planner(self):
-        """Use a genetic algorithm to define the rescue sequence."""
-        if not self.victims:
+        """ A method that calculates the path between victims: walk actions in a OFF-LINE MANNER (the agent plans, stores the plan, and
+            after it executes. Eeach element of the plan is a pair dx, dy that defines the increments for the the x-axis and  y-axis."""
+
+
+        # let's instantiate the breadth-first search
+        # bfs = BFS(self.map, self.COST_LINE, self.COST_DIAG)
+        dijkstra = Dijkstra(base=(0,0), map=self.map, line_cost=self.COST_LINE, diag_cost=self.COST_DIAG)
+        
+
+        # for each victim of the first sequence of rescue for this agent, we're going go calculate a path
+        # starting at the base - always at (0,0) in relative coords
+
+        if not self.sequences:   # no sequence assigned to the agent, nothing to do
             return
 
-        # Generate initial population
-        population = [random.sample(list(self.victims.keys()), len(self.victims)) for _ in range(10)]
+        # we consider only the first sequence (the simpler case)
+        # The victims are sorted by x followed by y positions: [vic_id]: ((x,y), [<vs>]
 
-        # Evolve population over generations
-        for _ in range(100):
-            # Evaluate fitness
-            population = sorted(population, key=self.fitness, reverse=True)
+        sequence = self.sequences[0]
+        start = (0,0) # always from starting at the base
+        for vic_id in sequence:
+            goal = sequence[vic_id][0]
+            # plan, time = bfs.search(start, goal, self.plan_rtime)
+            plan, time = dijkstra.calc_plan(start, goal, self.plan_rtime)
+            plan = plan + [(0,0)]
 
-            # Select top individuals for reproduction
-            new_population = population[:5]
+            # plan_back, time_back = bfs.search(goal, (0,0), self.plan_rtime - time)
+            plan_back, time_back = dijkstra.calc_plan(goal, (0,0), self.plan_rtime - time)
+            plan_rtime_back = self.plan_rtime - time_back
 
-            # Create offspring through crossover and mutation
-            for _ in range(5):
-                parent1, parent2 = random.sample(new_population, 2)
-                child = self.crossover(parent1, parent2)
-                self.mutate(child)
-                new_population.append(child)
+            if plan == [] or plan_back == []:
+                continue
 
-            population = new_population
+            if plan_rtime_back + self.COST_FIRST_AID <= 150:
+                break
 
-        # Use the best individual as the rescue sequence
-        best_individual = population[0]
-        self.plan = []
-        current_pos = (0, 0)
+            self.plan = self.plan + plan
+            self.plan_rtime = self.plan_rtime - time
+            start = goal
 
-        for victim_id in best_individual:
-            coord, _ = self.victims[victim_id]
-            dx = coord[0] - current_pos[0]
-            dy = coord[1] - current_pos[1]
-            self.plan.append((dx, dy, True))
-            current_pos = coord
+        # Plan to come back to the base
+        # plan_back, time_back = bfs.search(start, (0,0), self.plan_rtime)
+        plan_back, time_back = dijkstra.calc_plan(start, (0,0), self.plan_rtime)
+        self.plan = self.plan + plan_back
+        self.plan_rtime = self.plan_rtime - time_back
 
-        # Add return to base
-        self.plan.append((-current_pos[0], -current_pos[1], False))
+
 
     def sync_explorers(self, explorer_map, victims):
         """ This method should be invoked only to the master agent
@@ -293,23 +273,39 @@ class Rescuer(AbstAgent):
 
 
     def deliberate(self) -> bool:
-        """Choose the next action to execute."""
-        if not self.plan:
-            print(f"{self.NAME} has finished the plan.")
-            return False
+        """ This is the choice of the next action. The simulator calls this
+        method at each reasonning cycle if the agent is ACTIVE.
+        Must be implemented in every agent
+        @return True: there's one or more actions to do
+        @return False: there's no more action to do """
 
-        dx, dy, there_is_vict = self.plan.pop(0)
+        # No more actions to do
+        if self.plan == []:  # empty list, no more actions to do
+           print(f"{self.NAME} has finished the plan [ENTER]")
+           return False
+
+        # Takes the first action of the plan (walk action) and removes it from the plan
+        dx, dy = self.plan.pop(0)
+        #print(f"{self.NAME} pop dx: {dx} dy: {dy} ")
+
+        # Walk - just one step per deliberation
         walked = self.walk(dx, dy)
 
-        if walked == VS.EXECUTED:
+        # Rescue the victim at the current position
+        if walked == VS.EXECUTED:   # walk action was a success
             self.x += dx
             self.y += dy
+            #print(f"{self.NAME} Walk ok - Rescuer at position ({self.x}, {self.y})")
 
-            if there_is_vict and self.map.in_map((self.x, self.y)):
+            # check if there is a victim at the current position
+            if self.map.in_map((self.x, self.y)):
                 vic_id = self.map.get_vic_id((self.x, self.y))
-                if vic_id != VS.NO_VICTIM:
-                    rescued = self.first_aid()
-                    # if rescued:
-                        # print(f"{self.NAME} rescued victim at ({self.x}, {self.y}).")
+                # if there's a victim, drop first aid
+                if (dx, dy) == (0,0) and vic_id != VS.NO_VICTIM:
+                    self.first_aid()
+                    #if self.first_aid(): # True when rescued
+                        #print(f"{self.NAME} Victim rescued at ({self.x}, {self.y})")
+        else:
+            print(f"{self.NAME} Plan fail - walk error - agent at ({self.x}, {self.x})")
 
         return True
