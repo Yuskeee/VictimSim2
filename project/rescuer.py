@@ -21,6 +21,7 @@ from vs.physical_agent import PhysAgent
 from vs.constants import VS
 from bfs import BFS
 from abc import ABC, abstractmethod
+from dijkstra import Dijkstra
 
 
 ## Classe que define o Agente Rescuer com um plano fixo
@@ -160,7 +161,8 @@ class Rescuer(AbstAgent):
 
 
         # let's instantiate the breadth-first search
-        bfs = BFS(self.map, self.COST_LINE, self.COST_DIAG)
+        # bfs = BFS(self.map, self.COST_LINE, self.COST_DIAG)
+        dijkstra = Dijkstra((0,0), self.map, self.COST_LINE, self.COST_DIAG)
 
         # for each victim of the first sequence of rescue for this agent, we're going go calculate a path
         # starting at the base - always at (0,0) in relative coords
@@ -177,9 +179,11 @@ class Rescuer(AbstAgent):
         for vic_id in sequence:
             # Plan to come back to the base from the next victim position
             goal = sequence[vic_id][0]
-            plan_back, time_back = bfs.search(goal, (0,0))
+            # plan_back, time_back = bfs.search(goal, (0,0))
+            plan_back, time_back = dijkstra.calc_plan(goal, (0,0))
             
-            plan, time = bfs.search(start, goal, self.plan_rtime - time_back - time_tolerance) 
+            # plan, time = bfs.search(start, goal, self.plan_rtime - time_back - time_tolerance) 
+            plan, time = dijkstra.calc_plan(start, goal, self.plan_rtime - time_back - time_tolerance)
             
             # Check whether the agent has to come back to the base
             if time == -1:
@@ -196,7 +200,8 @@ class Rescuer(AbstAgent):
             # print(f"{self.NAME} Remaining Time to rescue victim {vic_id}: {self.plan_rtime}")
 
         # Plan to come back to the base from the last victim position
-        plan_back, time_back = bfs.search(start, (0,0), self.plan_rtime)
+        # plan_back, time_back = bfs.search(start, (0,0), self.plan_rtime)
+        plan_back, time_back = dijkstra.calc_plan(start, (0,0), self.plan_rtime)
         self.plan = self.plan + plan_back
         self.plan_rtime = self.plan_rtime - time_back
 
