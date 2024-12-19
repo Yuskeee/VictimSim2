@@ -135,7 +135,7 @@ class Explorer(AbstAgent):
             else:
                 goal = self.visited_cells_with_unvisited_neighbors.pop()
                 backtrack_plan, backtrack_plan_cost = bfs_for_backtrack.search(start, goal)
-            print(f"{self.NAME}: all neighbors visited, backtracking to {goal} from ({self.x}, {self.y})")
+            # print(f"{self.NAME}: all neighbors visited, backtracking to {goal} from ({self.x}, {self.y})")
             # dijkstra_for_backtrack = Dijkstra(start, self.map)
             # backtrack_plan, backtrack_plan_cost = dijkstra_for_backtrack.calc_shortest_path(start, goal)
             self.walk_stack = Stack()

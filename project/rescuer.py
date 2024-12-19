@@ -22,6 +22,8 @@ from vs.constants import VS
 from bfs import BFS
 from abc import ABC, abstractmethod
 from dijkstra import Dijkstra
+from collections import OrderedDict
+import pickle
 
 
 ## Classe que define o Agente Rescuer com um plano fixo
@@ -147,11 +149,33 @@ class Rescuer(AbstAgent):
             A sequence is a dictionary with the following structure: [vic_id]: ((x,y), [<vs>]"""
         # pass
         new_sequences = []
+        dijkstra = Dijkstra((0,0), self.map, self.COST_LINE, self.COST_DIAG)
 
         for seq in self.sequences:   # a list of sequences, being each sequence a dictionary
-            seq = dict(sorted(seq.items(), key=lambda item: item[1]))
-            new_sequences.append(seq)
-            #print(f"{self.NAME} sequence of visit:\n{seq}\n")
+            start = (0,0)
+            tmp_seq = seq.copy()
+            new_sequence = OrderedDict()
+
+            while tmp_seq:
+                shortest_time = float('inf')
+                closest_vic = None
+                for vic_id in tmp_seq.keys():
+                    goal = tmp_seq[vic_id][0]
+                    time = dijkstra.get_shortest_cost(start, goal)
+                    if time < shortest_time:
+                        shortest_time = time
+                        closest_vic = vic_id
+
+                new_sequence[closest_vic] = seq[closest_vic]
+                start = tmp_seq[closest_vic][0]
+                tmp_seq.pop(closest_vic)
+            
+            new_sequences.append(new_sequence)
+
+            # seq = dict(sorted(seq.items(), key=lambda item: item[1]))
+            # new_sequences.append(seq)
+            # #print(f"{self.NAME} sequence of visit:\n{seq}\n")
+
 
         self.sequences = new_sequences
 
@@ -174,6 +198,7 @@ class Rescuer(AbstAgent):
         # The victims are sorted by x followed by y positions: [vic_id]: ((x,y), [<vs>]
 
         sequence = self.sequences[0]
+        # print(f"{self.NAME} sequence of visit:\n{sequence}\n")
         start = (0,0) # always from starting at the base
         time_tolerance = self.COST_FIRST_AID
         for vic_id in sequence:
@@ -226,6 +251,14 @@ class Rescuer(AbstAgent):
 
         # check if all maps were received
         if self.received_maps == self.nb_of_explorers:
+            # save map in a file using pickle
+            mapfile = open('map_pickle', 'ab')
+            
+            # source, destination
+            pickle.dump(self.map, mapfile)                    
+            mapfile.close()
+
+
             print(f"{self.NAME} all maps received from the explorers")
             #self.map.draw()
             #print(f"{self.NAME} found victims by all explorers:\n{self.victims}")
