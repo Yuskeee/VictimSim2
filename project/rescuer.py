@@ -21,7 +21,6 @@ from vs.physical_agent import PhysAgent
 from vs.constants import VS
 from bfs import BFS
 from abc import ABC, abstractmethod
-from dijkstra import Dijkstra
 
 
 ## Classe que define o Agente Rescuer com um plano fixo
@@ -159,9 +158,7 @@ class Rescuer(AbstAgent):
 
 
         # let's instantiate the breadth-first search
-        # bfs = BFS(self.map, self.COST_LINE, self.COST_DIAG)
-        dijkstra = Dijkstra(base=(0,0), map=self.map, line_cost=self.COST_LINE, diag_cost=self.COST_DIAG)
-        
+        bfs = BFS(self.map, self.COST_LINE, self.COST_DIAG)
 
         # for each victim of the first sequence of rescue for this agent, we're going go calculate a path
         # starting at the base - always at (0,0) in relative coords
@@ -176,12 +173,9 @@ class Rescuer(AbstAgent):
         start = (0,0) # always from starting at the base
         for vic_id in sequence:
             goal = sequence[vic_id][0]
-            # plan, time = bfs.search(start, goal, self.plan_rtime)
-            plan, time = dijkstra.calc_plan(start, goal, self.plan_rtime)
-            plan = plan + [(0,0)]
+            plan, time = bfs.search(start, goal, self.plan_rtime)
 
-            # plan_back, time_back = bfs.search(goal, (0,0), self.plan_rtime - time)
-            plan_back, time_back = dijkstra.calc_plan(goal, (0,0), self.plan_rtime - time)
+            plan_back, time_back = bfs.search(goal, (0,0), self.plan_rtime - time)
             plan_rtime_back = self.plan_rtime - time_back
 
             if plan == [] or plan_back == []:
@@ -195,8 +189,7 @@ class Rescuer(AbstAgent):
             start = goal
 
         # Plan to come back to the base
-        # plan_back, time_back = bfs.search(start, (0,0), self.plan_rtime)
-        plan_back, time_back = dijkstra.calc_plan(start, (0,0), self.plan_rtime)
+        plan_back, time_back = bfs.search(start, (0,0), self.plan_rtime)
         self.plan = self.plan + plan_back
         self.plan_rtime = self.plan_rtime - time_back
 
@@ -301,7 +294,7 @@ class Rescuer(AbstAgent):
             if self.map.in_map((self.x, self.y)):
                 vic_id = self.map.get_vic_id((self.x, self.y))
                 # if there's a victim, drop first aid
-                if (dx, dy) == (0,0) and vic_id != VS.NO_VICTIM:
+                if vic_id != VS.NO_VICTIM:
                     self.first_aid()
                     #if self.first_aid(): # True when rescued
                         #print(f"{self.NAME} Victim rescued at ({self.x}, {self.y})")
