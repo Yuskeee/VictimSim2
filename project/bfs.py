@@ -9,8 +9,8 @@ class BFS:
         self.cost_line = cost_line # the cost to move one step in the horizontal or vertical
         self.cost_diag = cost_diag # the cost to move one step in any diagonal
         self.tlim = float('inf')    # when the walk time reach this threshold, the plan is aborted
-        
-        
+
+
         self.incr = {              # the increments for each walk action
             0: (0, -1),             #  u: Up
             1: (1, -1),             # ur: Upper right diagonal
@@ -36,7 +36,7 @@ class BFS:
                     actions.append((self.incr[key][0], self.incr[key][1]))
 
                 incr += 1
-            
+
         return actions
 
     # Verifies if pos (state) is already in the frontier
@@ -45,10 +45,10 @@ class BFS:
             frontier_pos, _, _ = node
             if pos == frontier_pos:
                 return True
-            
+
         return False
 
-    
+
     def search(self, start, goal, tlim=float('inf')):
         """ this method performs a breadth-first search.
             @param start the initial position
@@ -64,15 +64,15 @@ class BFS:
         self.frontier = deque([(start, [], 0)]) # double ended queue (position, plan in delta x and delta y, accumulated time)
         if start == goal:
            return [], 0
-        
+
         while self.frontier:   # queue is not empty
             current_pos, plan, acc_cost = self.frontier.popleft()   # pop head of the queue
             selected.add(current_pos)
             possible_actions = self.get_possible_actions(current_pos)
-     
+
             for action in possible_actions:
                 child = (current_pos[0] + action[0], current_pos[1] + action[1])
-                
+
                 if self.map.in_map(child) and child not in selected and not self.in_the_frontier(child):
                     difficulty = self.map.get_difficulty(child)
                     if action[0] == 0 or action[1] == 0: # hor or vertical move
@@ -80,19 +80,19 @@ class BFS:
                     else:
                         new_acc_cost = acc_cost + self.cost_diag * difficulty
 
-                    
+
                     new_plan = plan + [action]
-                    
+
                     if child == goal:
                         if new_acc_cost > self.tlim:
                             return [], -1    # time exceeded
-                        
+
                         return new_plan, new_acc_cost
 
                     self.frontier.append((child, new_plan, new_acc_cost))  #append child
-                
 
-                    
+
+
         return None, 0  # No path found
 
 # Example usage: it is a script not used when importe by other module
@@ -102,7 +102,7 @@ if __name__ == '__main__':
         (0, 0): (1, VS.NO_VICTIM, [VS.END, VS.END, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.END,   VS.END]),
         (1, 0): (1, VS.NO_VICTIM, [VS.END, VS.END, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.END]),
         (2, 0): (1, VS.NO_VICTIM, [VS.END, VS.END, VS.CLEAR, VS.WALL,  VS.WALL,  VS.CLEAR, VS.CLEAR, VS.END]),
-        (3, 0): (1, VS.NO_VICTIM, [VS.END, VS.END, VS.END,   VS.END,   VS.WALL,  VS.WALL,  VS.CLEAR, VS.END]),   
+        (3, 0): (1, VS.NO_VICTIM, [VS.END, VS.END, VS.END,   VS.END,   VS.WALL,  VS.WALL,  VS.CLEAR, VS.END]),
         (0, 1): (1, 1,            [VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.END,   VS.END,   VS.END]),
         (1, 1): (1, 2,            [VS.CLEAR, VS.CLEAR, VS.WALL,  VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.CLEAR]),
         (0, 2): (1, VS.NO_VICTIM, [VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.END, VS.END, VS.END, VS.END,   VS.END]),
@@ -118,4 +118,3 @@ if __name__ == '__main__':
     plan, total_cost = bfs.search(start, goal)
     print(f"Start: {start}, goal: {goal} cost: {total_cost}")
     print(f"Plan: {plan}")
-
