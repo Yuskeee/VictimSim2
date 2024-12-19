@@ -145,13 +145,13 @@ class Dijkstra:
 if __name__ == "__main__":
     map = Map()
     map.data = {
-        (0, 0): (1, VS.NO_VICTIM, [VS.END, VS.END, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.END, VS.END,   VS.END]),
-        (1, 0): (1, VS.NO_VICTIM, [VS.END, VS.END, VS.CLEAR, VS.WALL, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.END]),
-        (2, 0): (1, VS.NO_VICTIM, [VS.END, VS.END, VS.CLEAR, VS.WALL,  VS.WALL,  VS.CLEAR, VS.CLEAR, VS.END]),
-        (3, 0): (1, VS.NO_VICTIM, [VS.END, VS.END, VS.END,   VS.END,   VS.WALL,  VS.WALL,  VS.CLEAR, VS.END]),   
-        (0, 1): (1, 1,            [VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.END,   VS.END,   VS.END]),
-        (1, 1): (1, 2,            [VS.CLEAR, VS.CLEAR, VS.WALL,  VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.CLEAR]),
-        (0, 2): (1, VS.NO_VICTIM, [VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.END, VS.END, VS.END, VS.END,   VS.END]),
+        (0, 0): (10, VS.NO_VICTIM, [VS.END, VS.END, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.END, VS.END,   VS.END]),
+        (1, 0): (5, VS.NO_VICTIM, [VS.END, VS.END, VS.CLEAR, VS.WALL, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.END]),
+        (2, 0): (8, VS.NO_VICTIM, [VS.END, VS.END, VS.CLEAR, VS.WALL,  VS.CLEAR,  VS.CLEAR, VS.CLEAR, VS.END]),
+        (3, 0): (3, VS.NO_VICTIM, [VS.END, VS.END, VS.END,   VS.END,   VS.WALL,  VS.WALL,  VS.CLEAR, VS.END]),   
+        (0, 1): (5, 1,            [VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.END,   VS.END,   VS.END]),
+        (1, 1): (0.1, 2,            [VS.CLEAR, VS.CLEAR, VS.WALL,  VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.CLEAR]),
+        (0, 2): (3, VS.NO_VICTIM, [VS.CLEAR, VS.CLEAR, VS.CLEAR, VS.END, VS.END, VS.END, VS.END,   VS.END]),
         (1, 2): (1, VS.NO_VICTIM, [VS.CLEAR, VS.WALL,  VS.CLEAR, VS.END, VS.END, VS.END, VS.CLEAR, VS.CLEAR]),
         (2, 2): (1, VS.NO_VICTIM, [VS.WALL,  VS.WALL,  VS.CLEAR, VS.END, VS.END, VS.END, VS.CLEAR, VS.CLEAR]),
         (3, 2): (1, 3,            [VS.WALL,  VS.END,   VS.END,   VS.END, VS.END, VS.END, VS.CLEAR, VS.WALL]),
@@ -159,7 +159,10 @@ if __name__ == "__main__":
     map.draw()  
     print(map.get((1,0)))
     dijkstra = Dijkstra((0,0), map)
-    print(dijkstra._graph)
+    # print(dijkstra._graph)
+    graph = dijkstra._graph
+    for node in graph:
+        print(node, graph[node])
     prev_back_plan, prev_back_time = dijkstra.calc_plan((0,0), (0,0))
     print(prev_back_plan, prev_back_time)
     # dijkstra.add_edge((0,0), (1,0), 1, 1)
