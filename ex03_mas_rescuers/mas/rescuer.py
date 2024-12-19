@@ -56,7 +56,8 @@ class Rescuer(AbstAgent):
         self.set_state(VS.IDLE)
 
     def save_cluster_csv(self, cluster, cluster_id):
-        filename = f"./clusters/cluster{cluster_id}.txt"
+        # filename = f"./clusters/cluster{cluster_id}.txt"
+        filename = f"C:/Users/Anna/Documents/UTFPR/SI/VictimSim2/ex03_mas_rescuers/clusters/cluster{cluster_id}.txt"
         with open(filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
             for vic_id, values in cluster.items():
@@ -65,7 +66,8 @@ class Rescuer(AbstAgent):
                 writer.writerow([vic_id, x, y, vs[6], vs[7]])
 
     def save_sequence_csv(self, sequence, sequence_id):
-        filename = f"./clusters/seq{sequence_id}.txt"
+        # filename = f"./clusters/seq{sequence_id}.txt"
+        filename = f"C:/Users/Anna/Documents/UTFPR/SI/VictimSim2/ex03_mas_rescuers/clusters/cluster{sequence_id}.txt"
         with open(filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
             for id, values in sequence.items():
