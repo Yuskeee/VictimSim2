@@ -25,6 +25,8 @@ from abc import ABC, abstractmethod
 
 ## Classe que define o Agente Rescuer com um plano fixo
 class Rescuer(AbstAgent):
+    """ class attribute """
+    MAX_DIFFICULTY = 3             # the maximum degree of difficulty to enter into a cell
     def __init__(self, env, config_file, nb_of_explorers=1,clusters=[]):
         """
         @param env: a reference to an instance of the environment class
@@ -49,7 +51,7 @@ class Rescuer(AbstAgent):
         self.y = 0                   # the current y position of the rescuer when executing the plan
         self.clusters = clusters     # the clusters of victims this agent should take care of - see the method cluster_victims
         self.sequences = clusters    # the sequence of visit of victims for each cluster
-
+        self.victims_to_be_saved = [] # list of victims to be saved
 
         # Starts in IDLE state.
         # It changes to ACTIVE when the map arrives
@@ -171,19 +173,34 @@ class Rescuer(AbstAgent):
 
         sequence = self.sequences[0]
         start = (0,0) # always from starting at the base
+        time_tolerance = self.COST_FIRST_AID
         for vic_id in sequence:
+            # Plan to come back to the base from the next victim position
             goal = sequence[vic_id][0]
-            plan, time = bfs.search(start, goal, self.plan_rtime)
+            plan_back, time_back = bfs.search(goal, (0,0))
+            
+            plan, time = bfs.search(start, goal, self.plan_rtime - time_back - time_tolerance) 
+            
+            # Check whether the agent has to come back to the base
+            if time == -1:
+                print(f"{self.NAME} Plan incomplete - not enough time to rescue all victims")
+                break
+
+            # Victim should be rescued
+            self.victims_to_be_saved.append(vic_id)
             self.plan = self.plan + plan
-            self.plan_rtime = self.plan_rtime - time
+            self.plan_rtime = self.plan_rtime - time - time_tolerance
             start = goal
 
-        # Plan to come back to the base
-        goal = (0,0)
-        plan, time = bfs.search(start, goal, self.plan_rtime)
-        self.plan = self.plan + plan
-        self.plan_rtime = self.plan_rtime - time
+            # print the remaining time to rescue each victim
+            # print(f"{self.NAME} Remaining Time to rescue victim {vic_id}: {self.plan_rtime}")
 
+        # Plan to come back to the base from the last victim position
+        plan_back, time_back = bfs.search(start, (0,0), self.plan_rtime)
+        self.plan = self.plan + plan_back
+        self.plan_rtime = self.plan_rtime - time_back
+
+        return
 
     def sync_explorers(self, explorer_map, victims):
         """ This method should be invoked only to the master agent
@@ -265,6 +282,9 @@ class Rescuer(AbstAgent):
         # No more actions to do
         if self.plan == []:  # empty list, no more actions to do
            print(f"{self.NAME} has finished the plan [ENTER]")
+           # Print remaining plan time
+           print(f"{self.NAME} Remaining time: {self.plan_rtime}")
+           print(f"{self.NAME} True remaining time: {self.get_rtime()}")
            return False
 
         # Takes the first action of the plan (walk action) and removes it from the plan
@@ -283,12 +303,21 @@ class Rescuer(AbstAgent):
             # check if there is a victim at the current position
             if self.map.in_map((self.x, self.y)):
                 vic_id = self.map.get_vic_id((self.x, self.y))
-                # if there's a victim, drop first aid
-                if vic_id != VS.NO_VICTIM:
+                # if there's a victim and the victim position is on the rescuers sequence, drop first aid
+                if vic_id != VS.NO_VICTIM and vic_id in self.victims_to_be_saved:
                     self.first_aid()
+                    self.victims_to_be_saved.remove(vic_id)
+                    # Print remaining time
+                    # print(f"{self.NAME} True remaining time to rescue victim {vic_id}: {self.get_rtime()}")
                     #if self.first_aid(): # True when rescued
                         #print(f"{self.NAME} Victim rescued at ({self.x}, {self.y})")
         else:
-            print(f"{self.NAME} Plan fail - walk error - agent at ({self.x}, {self.x})")
+            print(f"{self.NAME} Plan fail - walk error - agent at ({self.x}, {self.x}) due to {walked}")
+            # Print remaining plan time
+            print(f"{self.NAME} Remaining time: {self.plan_rtime}")
+            print(f"{self.NAME} True remaining time: {self.get_rtime()}")
+            # Print the plan
+            # for p in self.plan:
+            #     print(f"{self.NAME} Plan: {p}")
 
         return True
