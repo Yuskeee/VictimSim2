@@ -22,10 +22,26 @@ def main(data_folder_name, config_ag_folder_name):
 
     # Explorer needs to know rescuer to send the map 
     # that's why rescuer is instatiated before
-    for exp in range(1, 5):
-        filename = f"explorer_{exp:1d}_config.txt"
-        explorer_file = os.path.join(config_ag_folder, filename)
-        Explorer(env, explorer_file, master_rescuer)
+    # for exp in range(1, 5):
+    exp = 1
+    filename = f"explorer_{exp:1d}_config.txt"
+    explorer_file = os.path.join(config_ag_folder, filename)
+    Explorer(env, explorer_file, master_rescuer, 1)
+
+    exp = 2
+    filename = f"explorer_{exp:1d}_config.txt"
+    explorer_file = os.path.join(config_ag_folder, filename)
+    Explorer(env, explorer_file, master_rescuer, 3)
+
+    exp = 3
+    filename = f"explorer_{exp:1d}_config.txt"
+    explorer_file = os.path.join(config_ag_folder, filename)
+    Explorer(env, explorer_file, master_rescuer, 5)
+
+    exp = 4
+    filename = f"explorer_{exp:1d}_config.txt"
+    explorer_file = os.path.join(config_ag_folder, filename)
+    Explorer(env, explorer_file, master_rescuer, 7)
 
     # Run the environment simulator
     env.run()
@@ -38,7 +54,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         data_folder_name = sys.argv[1]
     else:
-        data_folder_name = os.path.join("datasets", "data_400v_90x90")
+        data_folder_name = os.path.join("datasets", "data_408v_94x94")
         config_ag_folder_name = os.path.join(".", "cfg")
         
     main(data_folder_name, config_ag_folder_name)
