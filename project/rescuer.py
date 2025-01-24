@@ -81,53 +81,141 @@ class Rescuer(AbstAgent):
                 writer.writerow([id, x, y, vs[6], vs[7]])
 
     def cluster_victims(self):
-        """ @TODO: IMPLEMENT A CLUSTERING METHOD
-            This method divides the victims in four quadrants of the explored region.
-            @returns: a list of clusters where each cluster is a dictionary in the format [vic_id]: ((x,y), [<vs>])
-                      such as vic_id is the victim id, (x,y) is the victim's position, and [<vs>] the list of vital signals
-                      including the severity value and the corresponding label"""
-        # pass
-        # Find the upper and lower limits for x and y
-        lower_xlim = sys.maxsize
-        lower_ylim = sys.maxsize
-        upper_xlim = -sys.maxsize - 1
-        upper_ylim = -sys.maxsize - 1
+        """
+        This method uses K-Means to calculate the clusters of victims using (x,y) positions and gravity classes
+        """
+        # Number of clusters
+        k = 4
 
-        vic = self.victims
+        # Calculate random initial centroids (within the limits of the explored region)
+        x_positions = []
+        y_positions = []
+        gravity_classes = []
+        for _, values in self.victims.items():
+            x_positions.append(values[0][0])
+            y_positions.append(values[0][1])
+            gravity_classes.append(values[1][7])
+        lower_xlim = min(x_positions)
+        lower_ylim = min(y_positions)
+        upper_xlim = max(x_positions)
+        upper_ylim = max(y_positions)
+        lower_gravity = min(gravity_classes)
+        upper_gravity = max(gravity_classes)
+        centroids = []
+        for i in range(k):
+            x = random.uniform(lower_xlim, upper_xlim)
+            y = random.uniform(lower_ylim, upper_ylim)
+            gravity = random.uniform(lower_gravity, upper_gravity)
+            centroids.append((x, y, gravity))
 
-        for key, values in self.victims.items():
-            x, y = values[0]
-            lower_xlim = min(lower_xlim, x)
-            upper_xlim = max(upper_xlim, x)
-            lower_ylim = min(lower_ylim, y)
-            upper_ylim = max(upper_ylim, y)
+        # K-Means algorithm
+        centroid_changed = True
+        MAX_ITER = 100
+        iter = 0
+        # {vic_id: cluster_id}
+        clusters = {}
 
-        # Calculate midpoints
-        mid_x = lower_xlim + (upper_xlim - lower_xlim) / 2
-        mid_y = lower_ylim + (upper_ylim - lower_ylim) / 2
-        print(f"{self.NAME} ({lower_xlim}, {lower_ylim}) - ({upper_xlim}, {upper_ylim})")
-        print(f"{self.NAME} cluster mid_x, mid_y = {mid_x}, {mid_y}")
+        while centroid_changed and iter < MAX_ITER:
+            centroid_changed = False
 
-        # Divide dictionary into quadrants
-        upper_left = {}
-        upper_right = {}
-        lower_left = {}
-        lower_right = {}
+            # Calculate distance of each victim to the current centroids
+            for vic_id, values in self.victims.items():
+                x, y = values[0]
+                gravity = values[1][7]
+                min_dist = float('inf')
+                cluster_id = -1
+                for i in range(k):
+                    x_centroid, y_centroid, gravity_centroid = centroids[i]
+                    dist = (x - x_centroid)**2 + (y - y_centroid)**2 + (gravity - gravity_centroid)**2
+                    # Store closest centroid/cluster to current victim
+                    if dist < min_dist:
+                        min_dist = dist
+                        cluster_id = i
+                
+                # Reassign the closest cluster to the current victim
+                clusters[vic_id] = cluster_id
+            
+            # Calculate new centroids for each cluster
+            for i in range(k):
+                x_sum = 0
+                y_sum = 0
+                gravity_sum = 0
+                count = 0
+                for vic_id, values in self.victims.items():
+                    if clusters[vic_id] == i:
+                        x, y = values[0]
+                        gravity = values[1][7]
+                        x_sum += x
+                        y_sum += y
+                        gravity_sum += gravity
+                        count += 1
+                # Calculate average of each coordinate of the centroid
+                x_centroid = x_sum / count
+                y_centroid = y_sum / count
+                gravity_centroid = gravity_sum / count
+                # Check if the centroid has changed
+                if (x_centroid, y_centroid, gravity_centroid) != centroids[i]:
+                    centroids[i] = (x_centroid, y_centroid, gravity_centroid)
+                    centroid_changed = True
 
-        for key, values in self.victims.items():  # values are pairs: ((x,y), [<vital signals list>])
-            x, y = values[0]
-            if x <= mid_x:
-                if y <= mid_y:
-                    upper_left[key] = values
-                else:
-                    lower_left[key] = values
-            else:
-                if y <= mid_y:
-                    upper_right[key] = values
-                else:
-                    lower_right[key] = values
+            iter += 1
+            
+        # list[cluster_id] = {vic_id: values}
+        final_clusters = [{} for _ in range(k)]
+        # Assign each victim to its cluster
+        for vic_id, values in self.victims.items():
+            cluster_id = clusters[vic_id]
+            final_clusters[cluster_id][vic_id] = values
 
-        return [upper_left, upper_right, lower_left, lower_right]
+        print(f"{self.NAME} Clusters of victims: {final_clusters}")
+        
+        return final_clusters
+
+        # """ @TODO: IMPLEMENT A CLUSTERING METHOD
+        #     This method divides the victims in four quadrants of the explored region.
+        #     @returns: a list of clusters where each cluster is a dictionary in the format [vic_id]: ((x,y), [<vs>])
+        #               such as vic_id is the victim id, (x,y) is the victim's position, and [<vs>] the list of vital signals
+        #               including the severity value and the corresponding label"""
+        # # pass
+        # # Find the upper and lower limits for x and y
+        # lower_xlim = sys.maxsize
+        # lower_ylim = sys.maxsize
+        # upper_xlim = -sys.maxsize - 1
+        # upper_ylim = -sys.maxsize - 1
+
+        # vic = self.victims
+
+        # for key, values in self.victims.items():
+        #     x, y = values[0]
+        #     lower_xlim = min(lower_xlim, x)
+        #     upper_xlim = max(upper_xlim, x)
+        #     lower_ylim = min(lower_ylim, y)
+        #     upper_ylim = max(upper_ylim, y)
+
+        # # Calculate midpoints
+        # mid_x = lower_xlim + (upper_xlim - lower_xlim) / 2
+        # mid_y = lower_ylim + (upper_ylim - lower_ylim) / 2
+
+        # # Divide dictionary into quadrants
+        # upper_left = {}
+        # upper_right = {}
+        # lower_left = {}
+        # lower_right = {}
+
+        # for key, values in self.victims.items():  # values are pairs: ((x,y), [<vital signals list>])
+        #     x, y = values[0]
+        #     if x <= mid_x:
+        #         if y <= mid_y:
+        #             upper_left[key] = values
+        #         else:
+        #             lower_left[key] = values
+        #     else:
+        #         if y <= mid_y:
+        #             upper_right[key] = values
+        #         else:
+        #             lower_right[key] = values
+
+        # return [upper_left, upper_right, lower_left, lower_right]
 
     def predict_severity_and_class(self):
         """ @TODO to be replaced by a classifier and a regressor to calculate the class of severity and the severity values.
