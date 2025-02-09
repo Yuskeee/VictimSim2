@@ -131,10 +131,14 @@ class Dijkstra:
             start = node
         return plan, cost
 
-    def calc_backtrack(self, node):
+    def calc_backtrack(self, node, goal=None):
+        if not goal:
+            goal = self.base
+        
         backtrack = []
         # path = self.calc_shortest_path_back(node)
-        nodes, cost = self.calc_shortest_path(node, self.base)
+        # nodes, cost = self.calc_shortest_path(node, self.base)
+        nodes, cost = self.calc_shortest_path(node, goal)
         last = nodes.pop()
         while nodes:
             tmp = nodes.pop()

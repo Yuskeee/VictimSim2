@@ -132,17 +132,17 @@ class Explorer(AbstAgent):
         # if all neighbors are visited or bumps into a wall or limit, return to the previous position
         neighbors_not_worth_visiting = [(self.x + incr[0], self.y + incr[1]) in self.visited or self.check_walls_and_lim()[i] == VS.WALL or self.check_walls_and_lim()[i] == VS.END for i, incr in Explorer.AC_INCR.items()]
         if all(neighbors_not_worth_visiting):
-            bfs_for_backtrack = BFS(self.map)
+            # bfs_for_backtrack = BFS(self.map)
             start = (self.x, self.y)
             if self.visited_cells_with_unvisited_neighbors.is_empty():
-                goal = (0, 0)
-                backtrack_plan, backtrack_plan_cost = bfs_for_backtrack.search(start, goal)
+                # goal = (0, 0)
+                # backtrack_plan, backtrack_plan_cost = bfs_for_backtrack.search(start, goal)
+                backtrack_plan, _ = self.dijkstra(start)
             else:
                 goal = self.visited_cells_with_unvisited_neighbors.pop()
-                backtrack_plan, backtrack_plan_cost = bfs_for_backtrack.search(start, goal)
-            # print(f"{self.NAME}: all neighbors visited, backtracking to {goal} from ({self.x}, {self.y})")
-            # dijkstra_for_backtrack = Dijkstra(start, self.map)
-            # backtrack_plan, backtrack_plan_cost = dijkstra_for_backtrack.calc_shortest_path(start, goal)
+                # backtrack_plan, backtrack_plan_cost = bfs_for_backtrack.search(start, goal)
+                backtrack_plan, _ = self.dijkstra.calc_backtrack(start, goal)
+
             self.walk_stack = Stack()
             for action in backtrack_plan[::-1]:
                 self.walk_stack.push(action)
