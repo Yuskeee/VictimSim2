@@ -24,7 +24,19 @@ from abc import ABC, abstractmethod
 from dijkstra import Dijkstra
 from collections import OrderedDict
 import pickle
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.linear_model import Perceptron
 
+## Função para carregar modelo de regressão, que pode ser tanto CART quanto MLP
+def load_regressor():
+    """
+    Carrega o modelo de regressão treinado e salvo em disco.
+    """
+    # Carrega o modelo de regressão treinado
+    model_path = "regressor.pkl"
+    with open(model_path, 'rb') as f:
+        regressor = pickle.load(f)
+    return regressor
 
 ## Classe que define o Agente Rescuer com um plano fixo
 class Rescuer(AbstAgent):
@@ -59,6 +71,8 @@ class Rescuer(AbstAgent):
         # Starts in IDLE state.
         # It changes to ACTIVE when the map arrives
         self.set_state(VS.IDLE)
+
+        self.regressor = load_regressor()
 
     # save a calculated cluster in a csv file
     def save_cluster_csv(self, cluster, cluster_id):
@@ -223,7 +237,7 @@ class Rescuer(AbstAgent):
         """
         # pass
         for vic_id, values in self.victims.items():
-            severity_value = random.uniform(0.1, 99.9)          # to be replaced by a regressor
+            severity_value = self.regressor.predict([values[1][3:6]])[0]  # to be replaced by a regressor
             severity_class = random.randint(1, 4)               # to be replaced by a classifier
             values[1].extend([severity_value, severity_class])  # append to the list of vital signals; values is a pair( (x,y), [<vital signals list>] )
 
