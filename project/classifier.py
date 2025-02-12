@@ -1,15 +1,15 @@
 import numpy as np
 import pandas as pd
+import os
+import joblib
 
 from sklearn.model_selection import KFold
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, recall_score, precision_score, confusion_matrix
 from sklearn.tree import DecisionTreeClassifier
 
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
-
-import joblib
 
 ##############################################################################
 #                   FUNÇÕES GERAIS DE MÉTRICAS E AVALIAÇÃO                   #
@@ -180,6 +180,37 @@ def load_model(filename='best_model.pkl'):
     return joblib.load(filename)
 
 ##############################################################################
+#                                TESTE CEGO                                  #
+##############################################################################
+def test_model(dataset_path):
+    # Leitura do dataset de 800 vítimas (novamente, sem header)
+    df_test = pd.read_csv(dataset_path, sep=",", header=None)
+    X_test = df_test.iloc[:, [3, 4, 5]]
+    y_test = df_test.iloc[:, 7] - 1
+
+    # Previsão usando o modelo final
+    if final_winner_type == 'MLP':
+        y_pred_test = best_model.predict(X_test)
+        y_pred_test = np.argmax(y_pred_test, axis=1)
+    else:
+        y_pred_test = best_model.predict(X_test)
+
+    # Cálculo das métricas no conjunto de teste
+    acc_test = accuracy_score(y_test, y_pred_test)
+    f1_test = f1_score(y_test, y_pred_test, average='macro')
+    recall_test = recall_score(y_test, y_pred_test, average='macro')
+    precision_test = precision_score(y_test, y_pred_test, average='macro')
+    conf_matrix = confusion_matrix(y_test, y_pred_test)
+
+    print("\n=== Teste Cego no dataset ===")
+    print(f"Test Accuracy: {acc_test:.3f}")
+    print(f"Test F1 Score: {f1_test:.3f}")
+    print(f"Test Recall: {recall_test:.3f}")
+    print(f"Test Precision: {precision_test:.3f}")
+    print("Confusion Matrix:")
+    print(conf_matrix)
+
+##############################################################################
 #                               MAIN                                  #
 ##############################################################################
 
@@ -225,3 +256,5 @@ if __name__ == "__main__":
     # Salva para usar no Rescuer
     joblib.dump(best_model, 'best_model.pkl')
     print("\nModelo final salvo em 'best_model.pkl'")
+
+    test_model('datasets/data_800v/env_vital_signals.txt');
