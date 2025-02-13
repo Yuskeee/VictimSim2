@@ -2,3 +2,8 @@ Dijkstar==2.6.0
 numpy==2.0.0
 pygame==2.6.1
 six==1.17.0
+pandas
+matplotlib
+scikit-learn
+tensorflow
+joblib
