@@ -16,6 +16,9 @@ import math
 import csv
 import sys
 from map import Map
+from classifier import load_model
+import pandas as pd
+import numpy as np
 from vs.abstract_agent import AbstAgent
 from vs.physical_agent import PhysAgent
 from vs.constants import VS
@@ -145,10 +148,10 @@ class Rescuer(AbstAgent):
                     if dist < min_dist:
                         min_dist = dist
                         cluster_id = i
-                
+
                 # Reassign the closest cluster to the current victim
                 clusters[vic_id] = cluster_id
-            
+
             # Calculate new centroids for each cluster
             for i in range(k):
                 x_sum = 0
@@ -173,7 +176,7 @@ class Rescuer(AbstAgent):
                     centroid_changed = True
 
             iter += 1
-            
+
         # list[cluster_id] = {vic_id: values}
         final_clusters = [{} for _ in range(k)]
         # Assign each victim to its cluster
@@ -181,8 +184,8 @@ class Rescuer(AbstAgent):
             cluster_id = clusters[vic_id]
             final_clusters[cluster_id][vic_id] = values
 
-        print(f"{self.NAME} Clusters of victims: {final_clusters}")
-        
+        # print(f"{self.NAME} Clusters of victims: {final_clusters}")
+
         return final_clusters
 
         # """ @TODO: IMPLEMENT A CLUSTERING METHOD
@@ -235,10 +238,29 @@ class Rescuer(AbstAgent):
         """ @TODO to be replaced by a classifier and a regressor to calculate the class of severity and the severity values.
             This method should add the vital signals(vs) of the self.victims dictionary with these two values.
         """
-        # pass
+
         for vic_id, values in self.victims.items():
+            # Classificador
+            if os.path.exists('best_model.pkl'):
+                model = load_model('best_model.pkl')
+
+                qPA = values[1][3]
+                pulso = values[1][4]
+                freqResp = values[1][5]
+
+                victim_data = pd.DataFrame([{
+                    'qPA': qPA,
+                    'pulso': pulso,
+                    'freqResp': freqResp
+                }])
+
+                y_pred = model.predict(victim_data)  # Uma classe, ex: [2]
+                severity_class = y_pred[0]
+            else:
+                severity_class = random.randint(1, 4)               # to be replaced by a classifier
+
+            # Regressor
             severity_value = self.regressor.predict([values[1][3:6]])[0]  # to be replaced by a regressor
-            severity_class = random.randint(1, 4)               # to be replaced by a classifier
             values[1].extend([severity_value, severity_class])  # append to the list of vital signals; values is a pair( (x,y), [<vital signals list>] )
 
 
@@ -271,7 +293,7 @@ class Rescuer(AbstAgent):
                 new_sequence[closest_vic] = seq[closest_vic]
                 start = tmp_seq[closest_vic][0]
                 tmp_seq.pop(closest_vic)
-            
+
             new_sequences.append(new_sequence)
 
             # seq = dict(sorted(seq.items(), key=lambda item: item[1]))
@@ -308,10 +330,10 @@ class Rescuer(AbstAgent):
             goal = sequence[vic_id][0]
             # plan_back, time_back = bfs.search(goal, (0,0))
             plan_back, time_back = dijkstra.calc_plan(goal, (0,0))
-            
-            # plan, time = bfs.search(start, goal, self.plan_rtime - time_back - time_tolerance) 
+
+            # plan, time = bfs.search(start, goal, self.plan_rtime - time_back - time_tolerance)
             plan, time = dijkstra.calc_plan(start, goal, self.plan_rtime - time_back - time_tolerance)
-            
+
             # Check whether the agent has to come back to the base
             if time == -1:
                 print(f"{self.NAME} Plan incomplete - not enough time to rescue all victims")
@@ -355,9 +377,9 @@ class Rescuer(AbstAgent):
         if self.received_maps == self.nb_of_explorers:
             # save map in a file using pickle
             mapfile = open('map_pickle', 'ab')
-            
+
             # source, destination
-            pickle.dump(self.map, mapfile)                    
+            pickle.dump(self.map, mapfile)
             mapfile.close()
 
 
