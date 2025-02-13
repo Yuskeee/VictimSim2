@@ -190,52 +190,6 @@ class Rescuer(AbstAgent):
 
         return final_clusters
 
-        # """ @TODO: IMPLEMENT A CLUSTERING METHOD
-        #     This method divides the victims in four quadrants of the explored region.
-        #     @returns: a list of clusters where each cluster is a dictionary in the format [vic_id]: ((x,y), [<vs>])
-        #               such as vic_id is the victim id, (x,y) is the victim's position, and [<vs>] the list of vital signals
-        #               including the severity value and the corresponding label"""
-        # # pass
-        # # Find the upper and lower limits for x and y
-        # lower_xlim = sys.maxsize
-        # lower_ylim = sys.maxsize
-        # upper_xlim = -sys.maxsize - 1
-        # upper_ylim = -sys.maxsize - 1
-
-        # vic = self.victims
-
-        # for key, values in self.victims.items():
-        #     x, y = values[0]
-        #     lower_xlim = min(lower_xlim, x)
-        #     upper_xlim = max(upper_xlim, x)
-        #     lower_ylim = min(lower_ylim, y)
-        #     upper_ylim = max(upper_ylim, y)
-
-        # # Calculate midpoints
-        # mid_x = lower_xlim + (upper_xlim - lower_xlim) / 2
-        # mid_y = lower_ylim + (upper_ylim - lower_ylim) / 2
-
-        # # Divide dictionary into quadrants
-        # upper_left = {}
-        # upper_right = {}
-        # lower_left = {}
-        # lower_right = {}
-
-        # for key, values in self.victims.items():  # values are pairs: ((x,y), [<vital signals list>])
-        #     x, y = values[0]
-        #     if x <= mid_x:
-        #         if y <= mid_y:
-        #             upper_left[key] = values
-        #         else:
-        #             lower_left[key] = values
-        #     else:
-        #         if y <= mid_y:
-        #             upper_right[key] = values
-        #         else:
-        #             lower_right[key] = values
-
-        # return [upper_left, upper_right, lower_left, lower_right]
-
     def predict_severity_and_class(self):
         """ @TODO to be replaced by a classifier and a regressor to calculate the class of severity and the severity values.
             This method should add the vital signals(vs) of the self.victims dictionary with these two values.
