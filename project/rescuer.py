@@ -30,6 +30,7 @@ import pickle
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import Perceptron
 from genetic_sequencing import GeneticSequencer
+from sklearn.preprocessing import StandardScaler
 
 ## Função para carregar modelo de regressão, que pode ser tanto CART quanto MLP
 def load_regressor():
@@ -261,7 +262,12 @@ class Rescuer(AbstAgent):
                 severity_class = random.randint(1, 4)               # to be replaced by a classifier
 
             # Regressor
-            severity_value = self.regressor.predict([values[1][3:6]])[0]  # to be replaced by a regressor
+            # Escala os dados de entrada
+            scaler = StandardScaler()
+            X = np.array([values[1][3:6]])
+            X_scaled = scaler.fit_transform(X)
+
+            severity_value = self.regressor.predict(X_scaled)[0]
             values[1].extend([severity_value, severity_class])  # append to the list of vital signals; values is a pair( (x,y), [<vital signals list>] )
 
 

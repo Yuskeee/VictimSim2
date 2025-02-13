@@ -1,0 +1,10 @@
+# Virtual environment
+.venv/
+
+# Bytecode files (Compiled Python Files)
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs
+*.log
