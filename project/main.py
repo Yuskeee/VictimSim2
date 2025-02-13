@@ -1,9 +1,12 @@
 import sys
 import os
-
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from vs.environment import Env
 from explorer import Explorer
 from rescuer import Rescuer
+
+import warnings
+warnings.filterwarnings("ignore", category=Warning)
 
 def main(data_folder_name, config_ag_folder_name):
     
