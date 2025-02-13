@@ -15,7 +15,8 @@ def load_dataset(filepath):
     return df
 
 def main():
-    # Carrega o dataset de 4000 vítimas (treinamento/validação)
+    # Treinamento/Validação (4000 vítimas)
+    # Carrega o dataset de 4000 vítimas
     dataset_path = "datasets/data_4000v/env_vital_signals.txt"
     data = load_dataset(dataset_path)
     
@@ -26,16 +27,16 @@ def main():
     # Seleciona a variável alvo: gravidade (coluna 6)
     target = data.iloc[:, 6]
     
-    # Cria as partições para o grid search: 70% para treinamento e 30% para validação
-    X_train, X_val, y_train, y_val = train_test_split(features, target, test_size=0.3, shuffle=True, random_state=42)
+    # Cria as partições para o grid search: 80% para treinamento e 20% para validação
+    X_train, X_val, y_train, y_val = train_test_split(features, target, test_size=0.2, shuffle=True, random_state=42)
 
     print(f"Tam. total do dataset.......:\t{len(features):>4}")
     print(f"Tam. dataset treino & valid.:\t{len(X_train):>4}")
     print(f"Tam. dataset testes cegos...:\t{len(X_val):>4}")
 
     k_fold = 5
-    
-    # Ajuste do DecisionTreeRegressor (CART) via Grid Search
+
+    # DecisionTreeRegressor
     dt_param_grid = {
         'max_depth': [3, 5, 7],
         'min_samples_leaf': [1, 2, 4]
@@ -46,7 +47,7 @@ def main():
     dt_best = dt_grid.best_estimator_
     print("DecisionTreeRegressor - Melhores parâmetros:", dt_grid.best_params_)
     
-    # Avaliação no conjunto de validação
+    # Avaliação no conjunto de validação (4000 vítimas)
     dt_pred_val = dt_best.predict(X_val)
     dt_rmse = np.sqrt(mean_squared_error(y_val, dt_pred_val))
     dt_mae = mean_absolute_error(y_val, dt_pred_val)
@@ -56,7 +57,6 @@ def main():
     print(f"  MAE: {dt_mae:.2f}")
     print(f"  R2: {dt_r2:.2f}")
     
-    # Validação cruzada com todo o dataset para o DecisionTreeRegressor
     dt_cv_results = cross_validate(dt_best, features, target, cv=k_fold,
                                    scoring=('neg_mean_squared_error', 'neg_mean_absolute_error', 'r2'),
                                    return_train_score=False)
@@ -68,7 +68,7 @@ def main():
     print(f"  CV MAE: {dt_cv_mae:.2f}")
     print(f"  CV R2: {dt_cv_r2:.2f}")
     
-    # Ajuste do MLPRegressor (Rede Neural) via Grid Search
+    # MLPRegressor
     mlp_param_grid = {
         'hidden_layer_sizes': [(10,), (100,), (50, 50)],
         'activation': ['relu', 'tanh'],
@@ -81,7 +81,6 @@ def main():
     mlp_best = mlp_grid.best_estimator_
     print("MLPRegressor - Melhores parâmetros:", mlp_grid.best_params_)
     
-    # Avaliação no conjunto de validação
     mlp_pred_val = mlp_best.predict(X_val)
     mlp_rmse = np.sqrt(mean_squared_error(y_val, mlp_pred_val))
     mlp_mae = mean_absolute_error(y_val, mlp_pred_val)
@@ -91,7 +90,6 @@ def main():
     print(f"  MAE: {mlp_mae:.2f}")
     print(f"  R2: {mlp_r2:.2f}")
     
-    # Validação cruzada com todo o dataset para o MLPRegressor
     mlp_cv_results = cross_validate(mlp_best, features, target, cv=k_fold,
                                     scoring=('neg_mean_squared_error', 'neg_mean_absolute_error', 'r2'),
                                     return_train_score=False)
@@ -103,7 +101,7 @@ def main():
     print(f"  CV MAE: {mlp_cv_mae:.2f}")
     print(f"  CV R2: {mlp_cv_r2:.2f}")
     
-    # Seleção do melhor modelo com base no RMSE no conjunto de validação (talvez seja melhor pelo R2? Ou avaliar com múltiplas métricas?)
+    # Seleção do melhor modelo
     if dt_cv_rmse < mlp_cv_rmse:
         best_model = dt_best
         best_model_name = "DecisionTreeRegressor"
@@ -114,10 +112,44 @@ def main():
         best_val_rmse = mlp_cv_rmse
     print(f"Modelo selecionado: {best_model_name} com RMSE de validação: {best_val_rmse:.2f}")
     
-    # Salva o melhor modelo em um arquivo pickle
+    # Salva o melhor modelo (opcional)
     with open("regressor.pkl", "wb") as f:
         pickle.dump(best_model, f)
-    print("Melhor modelo salvo em 'regressor.pkl'.")
-
+    print("Melhor modelo salvo em 'regressor.pkl'.\n")
+    
+    ###########################################################################
+    
+    # Pré-teste Cego: Teste com os dois modelos no dataset de 800 vítimas
+    blind_dataset_path = "datasets/data_800v/env_vital_signals.txt"
+    test_data = load_dataset(blind_dataset_path)
+    
+    # Seleciona as mesmas features e a variável alvo
+    X_test = test_data.iloc[:, [3, 4, 5]]
+    y_test = test_data.iloc[:, 6]
+    
+    print(f"Tamanho do dataset de testes cegos (800 vítimas): {len(X_test)}\n")
+    
+    # Aplica o modelo DecisionTreeRegressor no dataset de teste cego
+    dt_blind_pred = dt_best.predict(X_test)
+    dt_blind_rmse = np.sqrt(mean_squared_error(y_test, dt_blind_pred))
+    dt_blind_mae = mean_absolute_error(y_test, dt_blind_pred)
+    dt_blind_r2 = r2_score(y_test, dt_blind_pred)
+    
+    print("Pré-teste Cego com DecisionTreeRegressor:")
+    print(f"  RMSE: {dt_blind_rmse:.2f}")
+    print(f"  MAE:  {dt_blind_mae:.2f}")
+    print(f"  R2:   {dt_blind_r2:.2f}\n")
+    
+    # Aplica o modelo MLPRegressor no dataset de teste cego
+    mlp_blind_pred = mlp_best.predict(X_test)
+    mlp_blind_rmse = np.sqrt(mean_squared_error(y_test, mlp_blind_pred))
+    mlp_blind_mae = mean_absolute_error(y_test, mlp_blind_pred)
+    mlp_blind_r2 = r2_score(y_test, mlp_blind_pred)
+    
+    print("Pré-teste Cego com MLPRegressor:")
+    print(f"  RMSE: {mlp_blind_rmse:.2f}")
+    print(f"  MAE:  {mlp_blind_mae:.2f}")
+    print(f"  R2:   {mlp_blind_r2:.2f}")
+    
 if __name__ == "__main__":
     main()
