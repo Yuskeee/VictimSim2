@@ -315,12 +315,13 @@ class Rescuer(AbstAgent):
                 self.map, 
                 self.COST_LINE, 
                 self.COST_DIAG,
-                population_size=100,  # Increased from 50
-                generations=200,      # Increased from 100
-                mutation_rate=0.2,    # Higher mutation for diversity
+                population_size=200,  # Increased from 50
+                generations=500,      # Increased from 100
+                mutation_rate=0.3,    # Higher mutation for diversity
                 Ts=self.TLIM,        # Pass time limit from rescuer
                 COST_FIRST_AID=self.COST_FIRST_AID  # Pass first aid cost
             )
+
             best_sequence = sequencer.run()
             # Convert sequence to OrderedDict
             ordered_cluster = OrderedDict()
