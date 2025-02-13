@@ -1,5 +1,6 @@
 import random
 import numpy as np
+from collections import defaultdict 
 from dijkstra import Dijkstra
 from vs.constants import VS  # Import VS constants for wall and clear values
 
@@ -51,11 +52,14 @@ class MockMap:
 
 class GeneticSequencer:
     def __init__(self, cluster_victims, map, line_cost=1.0, diag_cost=1.5, 
-                 population_size=50, generations=100, mutation_rate=0.1):
+                 population_size=100, generations=200, mutation_rate=0.2,
+                 Ts=300.0, COST_FIRST_AID=5.0):  # Add Ts and COST_FIRST_AID
         """
         Initialize the GA sequencer.
         :param cluster_victims: Dictionary of victims in the cluster {id: (pos, vitals)}.
         :param map: Map instance for pathfinding.
+        :param Ts: Time limit for the rescuer.
+        :param COST_FIRST_AID: Time cost to administer first aid to a victim.
         """
         self.victims = cluster_victims
         self.map = map
@@ -64,6 +68,8 @@ class GeneticSequencer:
         self.pop_size = population_size
         self.generations = generations
         self.mutation_rate = mutation_rate
+        self.Ts = Ts  # Time limit
+        self.COST_FIRST_AID = COST_FIRST_AID  # First aid cost
         self.base = (0, 0)
         
         # Precompute distance matrix
@@ -106,36 +112,54 @@ class GeneticSequencer:
         return total_cost
 
     def _fitness(self, sequence):
-        """Evaluate fitness: higher is better."""
-        total_cost = self._calculate_sequence_cost(sequence)
-        if total_cost == float('inf'):
-            return 0  # Invalid sequence
-        
-        # Priority score: sum of (1/position) * severity_weight (class 1: weight=4, ..., class 4: weight=1)
-        priority_score = 0
-        for idx, vic_id in enumerate(sequence, 1):
-            severity_class = self.victims[vic_id][1][7]
-            severity_weight = 5 - severity_class  # Class 1: 4, ..., Class 4: 1
-            priority_score += severity_weight / idx
-        
-        # Combine cost and priority (weighted sum)
-        fitness = (1 / total_cost) * 1000 + priority_score
-        return fitness
+        total_time = 0
+        current_pos = self.base
+        saved_severity = 0
+        COST_FIRST_AID = 5.0  # Example value; replace with actual from rescuer
+
+        for vic_id in sequence:
+            next_pos = self.victims[vic_id][0]
+            idx_current = self._get_vic_index(current_pos)
+            idx_next = self._get_vic_index(next_pos)
+            path_time = self.distance_matrix[idx_current][idx_next]
+            rescue_time = COST_FIRST_AID
+
+            if total_time + path_time + rescue_time > self.Ts:
+                break  # Cannot save this victim
+
+            total_time += path_time + rescue_time
+            saved_severity += self.victims[vic_id][1][6]  # Severity value
+            current_pos = next_pos
+
+        # Add return to base time if possible
+        return_time = self.distance_matrix[self._get_vic_index(current_pos)][0]
+        if total_time + return_time <= self.Ts:
+            total_time += return_time
+        else:
+            saved_severity *= 0.5  # Penalize for not returning
+
+        return saved_severity
 
     def _generate_initial_population(self):
-        """Generate initial population with random and heuristic-based sequences."""
-        population = []
+        # Greedy heuristic: Prioritize victims with highest severity/time ratio
+        victims = []
+        for vic_id in self.vic_ids:
+            pos = self.victims[vic_id][0]
+            time_to_vic = self.distance_matrix[0][self._get_vic_index(pos)]
+            severity = self.victims[vic_id][1][6]
+            if time_to_vic > 0:
+                ratio = severity / time_to_vic
+            else:
+                ratio = severity
+            victims.append((vic_id, ratio))
         
-        # Heuristic 1: Sort by severity (critical first), then nearest neighbor
-        sorted_by_severity = sorted(self.vic_ids, key=lambda vid: self.victims[vid][1][7])
-        heuristic_seq = self._nearest_neighbor(sorted_by_severity)
-        population.append(heuristic_seq)
+        sorted_victims = sorted(victims, key=lambda x: x[1], reverse=True)
+        heuristic_seq = [vic[0] for vic in sorted_victims]
         
-        # Add random permutations
+        population = [heuristic_seq]
+        # Add random sequences for diversity
         for _ in range(self.pop_size - 1):
-            shuffled = random.sample(self.vic_ids, len(self.vic_ids))
-            population.append(shuffled)
-        
+            population.append(random.sample(self.vic_ids, len(self.vic_ids)))
         return population
 
     def _nearest_neighbor(self, victims_list):
@@ -173,30 +197,36 @@ class GeneticSequencer:
             selected.append(candidates[0][0])
         return selected
 
-    def _ordered_crossover(self, parent1, parent2):
-        """Ordered Crossover (OX)."""
-        size = len(parent1)
-        start, end = sorted(random.sample(range(size), 2))
-        child = [None] * size
+    def _edge_recombination_crossover(self, parent1, parent2):
+        # Implement edge recombination (better for TSP)
+        edge_table = defaultdict(set)
+        for seq in [parent1, parent2]:
+            for i, vic in enumerate(seq):
+                prev = seq[i-1] if i > 0 else None
+                next = seq[i+1] if i < len(seq)-1 else None
+                edge_table[vic].update({prev, next})
         
-        # Copy segment from parent1
-        child[start:end] = parent1[start:end]
-        
-        # Fill remaining with parent2's order
-        ptr = end
-        for gene in parent2:
-            if gene not in child:
-                if ptr >= size:
-                    ptr = 0
-                child[ptr] = gene
-                ptr += 1
+        child = [parent1[0]]  # Start with first element
+        current = child[0]
+        while len(child) < len(parent1):
+            neighbors = edge_table[current]
+            best_neighbor = None
+            for neighbor in neighbors:
+                if neighbor not in child and neighbor is not None:
+                    best_neighbor = neighbor
+                    break
+            if best_neighbor is None:
+                remaining = [vic for vic in parent1 if vic not in child]
+                best_neighbor = random.choice(remaining)
+            child.append(best_neighbor)
+            current = best_neighbor
         return child
 
     def _mutate(self, sequence):
-        """Swap mutation."""
+        # Apply 2-opt local search
         if random.random() < self.mutation_rate:
-            i, j = random.sample(range(len(sequence)), 2)
-            sequence[i], sequence[j] = sequence[j], sequence[i]
+            i, j = sorted(random.sample(range(len(sequence)), 2))
+            sequence[i:j+1] = reversed(sequence[i:j+1])
         return sequence
 
     def run(self):
@@ -219,7 +249,7 @@ class GeneticSequencer:
             
             while len(new_population) < self.pop_size:
                 parent1, parent2 = self._select_parents(population, fitnesses)
-                child = self._ordered_crossover(parent1, parent2)
+                child = self._edge_recombination_crossover(parent1, parent2)
                 child = self._mutate(child)
                 new_population.append(child)
             
