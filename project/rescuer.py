@@ -29,6 +29,7 @@ from collections import OrderedDict
 import pickle
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import Perceptron
+from genetic_sequencing import GeneticSequencer
 
 ## Função para carregar modelo de regressão, que pode ser tanto CART quanto MLP
 def load_regressor():
@@ -264,43 +265,65 @@ class Rescuer(AbstAgent):
             values[1].extend([severity_value, severity_class])  # append to the list of vital signals; values is a pair( (x,y), [<vital signals list>] )
 
 
+    # def sequencing(self):
+    #     """ Currently, this method sort the victims by the x coordinate followed by the y coordinate
+    #         @TODO It must be replaced by a Genetic Algorithm that finds the possibly best visiting order """
+
+    #     """ We consider an agent may have different sequences of rescue. The idea is the rescuer can execute
+    #         sequence[0], sequence[1], ...
+    #         A sequence is a dictionary with the following structure: [vic_id]: ((x,y), [<vs>]"""
+    #     # pass
+    #     new_sequences = []
+    #     dijkstra = Dijkstra((0,0), self.map, self.COST_LINE, self.COST_DIAG)
+
+    #     for seq in self.sequences:   # a list of sequences, being each sequence a dictionary
+    #         start = (0,0)
+    #         tmp_seq = seq.copy()
+    #         new_sequence = OrderedDict()
+
+    #         while tmp_seq:
+    #             shortest_time = float('inf')
+    #             closest_vic = None
+    #             for vic_id in tmp_seq.keys():
+    #                 goal = tmp_seq[vic_id][0]
+    #                 time = dijkstra.get_shortest_cost(start, goal)
+    #                 if time < shortest_time:
+    #                     shortest_time = time
+    #                     closest_vic = vic_id
+
+    #             new_sequence[closest_vic] = seq[closest_vic]
+    #             start = tmp_seq[closest_vic][0]
+    #             tmp_seq.pop(closest_vic)
+
+    #         new_sequences.append(new_sequence)
+
+    #         # seq = dict(sorted(seq.items(), key=lambda item: item[1]))
+    #         # new_sequences.append(seq)
+    #         # #print(f"{self.NAME} sequence of visit:\n{seq}\n")
+
+
+    #     self.sequences = new_sequences
+
     def sequencing(self):
-        """ Currently, this method sort the victims by the x coordinate followed by the y coordinate
-            @TODO It must be replaced by a Genetic Algorithm that finds the possibly best visiting order """
-
-        """ We consider an agent may have different sequences of rescue. The idea is the rescuer can execute
-            sequence[0], sequence[1], ...
-            A sequence is a dictionary with the following structure: [vic_id]: ((x,y), [<vs>]"""
-        # pass
         new_sequences = []
-        dijkstra = Dijkstra((0,0), self.map, self.COST_LINE, self.COST_DIAG)
-
-        for seq in self.sequences:   # a list of sequences, being each sequence a dictionary
-            start = (0,0)
-            tmp_seq = seq.copy()
-            new_sequence = OrderedDict()
-
-            while tmp_seq:
-                shortest_time = float('inf')
-                closest_vic = None
-                for vic_id in tmp_seq.keys():
-                    goal = tmp_seq[vic_id][0]
-                    time = dijkstra.get_shortest_cost(start, goal)
-                    if time < shortest_time:
-                        shortest_time = time
-                        closest_vic = vic_id
-
-                new_sequence[closest_vic] = seq[closest_vic]
-                start = tmp_seq[closest_vic][0]
-                tmp_seq.pop(closest_vic)
-
-            new_sequences.append(new_sequence)
-
-            # seq = dict(sorted(seq.items(), key=lambda item: item[1]))
-            # new_sequences.append(seq)
-            # #print(f"{self.NAME} sequence of visit:\n{seq}\n")
-
-
+        for cluster in self.sequences:
+            if not cluster:
+                continue
+            # Run GA to find the best sequence
+            sequencer = GeneticSequencer(
+                cluster, 
+                self.map, 
+                self.COST_LINE, 
+                self.COST_DIAG,
+                population_size=50,
+                generations=100
+            )
+            best_sequence = sequencer.run()
+            # Convert sequence to OrderedDict
+            ordered_cluster = OrderedDict()
+            for vic_id in best_sequence:
+                ordered_cluster[vic_id] = cluster[vic_id]
+            new_sequences.append(ordered_cluster)
         self.sequences = new_sequences
 
     def planner(self):

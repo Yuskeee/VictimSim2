@@ -5,6 +5,9 @@ from vs.environment import Env
 from explorer import Explorer
 from rescuer import Rescuer
 
+import warnings
+warnings.filterwarnings("ignore", category=Warning)
+
 def main(data_folder_name, config_ag_folder_name):
     
     # Set the path to config files and data files for the environment
